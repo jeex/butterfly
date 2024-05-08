@@ -1,5 +1,6 @@
 import webview
 import webview.menu as wm
+import sys
 
 from helpers.globalclasses import Props
 
@@ -13,6 +14,8 @@ class Window:
 		if isinstance(wprops, list):
 			if len(wprops) == 6:
 				self._wprops = wprops
+
+		self.app = app
 
 		self.venster = webview.create_window(
 			self._title,
@@ -41,25 +44,40 @@ class Window:
 
 		webview.start(menu=self.make_menu(), ssl=False)
 
+	def force_refresh(self):
+		result = self.venster.create_confirmation_dialog('Are you sure?', 'All settings will be removed!')
+		if result:
+			Props.force_refresh()
+			self.venster.load_url(self.app)
+			self.venster.destroy()
+		else:
+			pass
+
+	def stop(self):
+		self.venster.destroy()
+
 	def make_menu(self):
 		return [
-			wm.Menu(
-				'Test Menu',
-				[
-					wm.MenuAction('Change Active Window Content', None),
-					wm.MenuSeparator(),
-					wm.Menu(
-						'Random',
-						[
-							wm.MenuAction('Click Me', None),
-							wm.MenuAction('File Dialog', None),
-						],
-					),
-				],
-			),
-			wm.Menu('Nothing Here', [wm.MenuAction('This will do nothing', None)]),
+			wm.Menu('Butterfly', [
+				wm.MenuAction('Close', self.stop),
+				wm.MenuAction('Force Refresh & Close', self.force_refresh),
+			]),
 		]
-
+		''' wm.Menu(
+						'Test Menu',
+						[
+							wm.MenuAction('Change Active Window Content', None),
+							wm.MenuSeparator(),
+							wm.Menu(
+								'Random',
+								[
+									wm.MenuAction('Click Me', None),
+									wm.MenuAction('File Dialog', None),
+								],
+							),
+						],
+					), 
+					'''
 	def on_closed(self):
 		pass
 
@@ -68,8 +86,7 @@ class Window:
 
 	def on_loaded(self):
 		# bij elke reload van url
-		title = Props.get_prop('window_title')
-		self.venster.title = f'{self._title} | {title}'
+		self.venster.title = f'{self._title}'
 
 	def on_venster_props(self):
 		self._wprops = [
@@ -82,5 +99,4 @@ class Window:
 		]
 		Props.set_prop('window_props', self._wprops)
 
-	def set_tab(self, s: str):
-		pass
+

@@ -51,10 +51,8 @@ def get_groep_model() -> dict:
 		id = 0,
 		name = '',
 		color = '#ffffff',
-		s_status = 0,
-		s_year = 2024,
-		s_term = 7,
-		s_teacher = 6,
+		extra = '',
+		status = 0,
 	)
 
 def create_status_table():
@@ -64,6 +62,7 @@ def create_status_table():
 	    name   VARCHAR (255),
 	    color  VARCHAR (255),
 	    extra  VARCHAR (255),
+	    ordering INTEGER,
 	    status BOOLEAN       DEFAULT (true) 
 	)
 	WITHOUT ROWID;
@@ -218,7 +217,7 @@ def conversie_eentwee(eentwee: int) -> (int, int): # ec stream
 	if eentwee in [6]:
 		ec = 1
 		stream = 1
-	elif eentwee in [1, 2, 10]:
+	elif eentwee in [1, 20, 10]:
 		ec = 15
 		stream = 1
 	elif eentwee in [3, 9]:
@@ -236,7 +235,7 @@ def conversie_eentwee(eentwee: int) -> (int, int): # ec stream
 	return ec, stream
 
 def conversie_startperiode(startperiode: str, eentwee: int) -> int:
-	if eentwee in [1, 2, 10]:
+	if eentwee in [1, 20, 10]:
 		# 15 ec
 		if int(startperiode) in [1, 2, 3, 4]:
 			return int(startperiode) + 2
@@ -285,7 +284,10 @@ def converteer_student(dbcon: Sqlite, student: dict):
 	fnaam, anaam = conversie_naam(student['naam'])
 	s_grade, grade_ts = conversie_grade_moment(student['grademomenten_ID'])
 	ec, stream = conversie_eentwee(student['eentwee_ID'])
-
+	if student['eentwee_ID'] == 2:
+		scourse = 20
+	else:
+		scourse = student['eentwee_ID']
 	news = dict(
 		id = student['ID'],
 		firstname = fnaam,
@@ -296,7 +298,7 @@ def converteer_student(dbcon: Sqlite, student: dict):
 		pf_url = student['portfolio_URL'],
 		grade = student['grade'],
 		grade_ts = grade_ts,
-		s_course = student['eentwee_ID'],
+		s_course = scourse,
 		s_ec = ec,
 		s_gender = conversie_mvo(student['mvo']),
 		s_grading = s_grade,
@@ -336,37 +338,18 @@ def converteer_groep(dbcon: Sqlite, groep: dict):
 	else:
 		lang = 3
 
-	if int(groep['startjaar']) == 2023:
-		if term == 5:
-			sstatus = 20
-			status = 0
-		elif term == 6:
-			sstatus = 20
-			status = 0
-		else:
-			sstatus = 0
-			status = 1
-	elif int(groep['startjaar']) > 2024:
-		sstatus = 10
-		status = 0
-	else:
-		sstatus = 0
-		status = 1
+	extra = f"oud – [year: {groep['startjaar']}] [period: {term}] [lang: {lang}]"
 
 	newg = dict(
 		id = groep['ID'],
 		name = groep['naam'],
 		color = groep['kleur'],
-		s_status = sstatus,
-		s_year = groep['startjaar'],
-		s_term = term,
-		s_lang = lang,
-		s_user = 6,
-		status = status,
+		extra = extra,
+		status = 0,
 	)
 	sql = """
 	INSERT INTO nw_groep
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	VALUES (?, ?, ?, ?, ?)
 	"""
 	vals = [newg[sub] for sub in newg]
 	dbcon.create(sql, vals)
@@ -379,7 +362,7 @@ def converteer_groepen():
 
 # converteer_groepen()
 
-# NU IS DE _DATABASE OMGEZET VAN OUDE NAAR NIEUWE STRUCTUUR
+# NU IS DE oude _DATABASE OMGEZET VAN OUDE NAAR NIEUWE STRUCTUUR
 # VANAF HIER KAN DIT WORDEN OMGEZET IN PICKLES
 
 from helpers.globalclasses import Sysls, Groups, Students
@@ -394,15 +377,15 @@ def nw_db_2_systempickles():
 		alle = sqlite.read(sql)
 		ad = dict()
 		for a in alle:
+			a['ordering'] = 0
 			ad[a['id']] = a
-
 		Sysls.make_sysl(syslname, ad)
 
 # nw_db_2_systempickles()
 
 def nw_db_2_groepen():
 	sqlite = Sqlite()
-	alle = sqlite.read("SELECT * FROM nw_groep")
+	alle = sqlite.read("SELECT * FROM nw_group")
 	for a in alle:
 		id = int(a['id'])
 		Groups.make_group(id, a)
@@ -433,10 +416,9 @@ def nw_db_2_students():
 # mits groepen e.d. niet zijn aangepast
 
 # verwijderen van nw_student
-'''
-make_student_table() # nieuwe studenttabel maken
+'''make_student_table() # nieuwe studenttabel maken
 converteer_studenten() # gebeurt binnen sqlite
-nw_db_2_students()
-'''
+nw_db_2_students()'''
+
 
 

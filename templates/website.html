@@ -1,0 +1,44 @@
+{% include '_head.html' %}
+<script type="text/javascript" src="/static/website.js"></script>
+<link rel="stylesheet" href="/static/website.css" />
+
+</head>
+<body>
+    {% include '_menu.html' %}
+    <menu id="submenu">
+            <ul>
+                <li class="{{ 'actief'|safe if bron == 'local' }}"><a href="/website/local">local</a></li>
+                <li class="{{ 'actief'|safe if bron == 'global' }}"><a href="/website/global">global</a></li>
+                {% if bron == 'default' %}<li class="actief"><a href="/website/local">local</a></li>{% endif %}
+                {% if message != '' %}<li class="message">{{ message }}</li>{% endif %}
+            </ul>
+        </menu>
+    </header>
+    <main >
+        <section>
+            <form name="edit" action="" method="post">
+                <article>
+                    <textarea name="html">{{ website._try('html') }}</textarea>
+                    {% if bron == 'local' %}
+                        <iframe></iframe>
+                    {% else %}
+                        <iframe src="https://cpnits.com"></iframe>
+                    {% endif %}
+                </article>
+                <footer>
+                    <input style="float:left; color: red;" type="submit" name="golive" value="save local &amp; global">
+                    {% if bron == 'local' %}
+                        <a href="#" class="refresh-local-view">Refresh local view</a>
+                    {% else %}
+                        <a href="#" class="refresh-global-view">Refresh global view</a>
+                        <a href="https://cpnits.com" target="_blank">Open in browser</a>
+                    {% endif %}
+                    <input style="float:right;" type="submit" name="opslaan" value="save local">
+                </footer>
+            </form>
+        </section>
+    </main>
+<script>
+
+</script>
+</body>

@@ -1,0 +1,59 @@
+main{
+    height: calc(100% - 7em);
+    margin-left: 0;
+    margin-right: 0;
+}
+section{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-content: center;
+}
+
+form[name="edit"]{
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+form[name="edit"] article{
+    margin: 0;
+    height: calc(100% - 3.5em);
+    padding: 0.5em;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+form[name="edit"] footer{
+    height: 2em;
+    margin: 0;
+    padding: 0.5em;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-content: center;
+    background-color: var(--menu);
+}
+form[name="edit"] footer a{
+    margin-top: 0.5em;
+}
+
+form[name="edit"] textarea{
+    width: 49.8%;
+    height: 100%;
+    box-sizing: border-box;
+}
+form[name="edit"] iframe{
+    width: 49.8%;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+form[name="edit"] input[type="submit"]{
+    font-family: "Roboto Mono", monospace;
+    padding: 0 2em;
+    font-weight: 600;
+}

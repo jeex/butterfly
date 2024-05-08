@@ -26,6 +26,14 @@ class Pickles:
 			pass
 		return False
 
+	@classmethod
+	def delete(cls, path: str) -> bool:
+		try:
+			os.remove(path)
+			return True
+		except:
+			return False
+
 
 class Props:
 	_props_dir = str(os.path.join(appdirs.user_config_dir(), 'JeexButterfly'))
@@ -33,6 +41,12 @@ class Props:
 	_props = dict()
 	_od_path = ''
 	_started = True
+	_rollen = ['studenten', 'soc', 'groepen', 'beheer']
+	_alias = 'Victor'
+
+	@classmethod
+	def magda(cls, wat) -> bool:
+		return wat in cls._rollen
 
 	@classmethod
 	def get_od_path(cls) -> str:
@@ -53,6 +67,11 @@ class Props:
 	def set_prop(cls, key: str, val):
 		cls._props[key] = val # update or create
 		Pickles.write(cls._props_path, cls._props)
+
+	@classmethod
+	def force_refresh(cls):
+		Pickles.delete(cls._props_path)
+		cls._props = dict()
 
 	@classmethod
 	def init_props(cls):
@@ -85,21 +104,39 @@ Props.init_props()
 class Sysls:
 	_systempath = os.path.join(Props.get_od_path(), '_DATABASE', 'system')
 	_sysls = [
-		's_course',
-		's_ec',
 		's_gender',
-		's_grading',
-		's_lang',
+
 		's_origin',
-		's_program',
-		's_status',
-		's_stream',
-		's_term',
 		's_uni',
-		's_user',
+		's_program',
+
 		's_year',
+		's_term',
+		's_lang',
+		's_ec',
+		's_course',
+		's_stream',
+
+		's_grading',
+		's_group',
+		's_status',
+		's_circular',
 	]
 	_sysmem = dict()
+
+	@classmethod
+	def nice_name(cls, key: str):
+		ss= cls._sysls.copy()
+		if not key in ss:
+			return ''
+		return key.replace('s_', '').capitalize()
+
+	@classmethod
+	def get_lijsten(cls):
+		eruit = dict()
+		for sys in cls._sysls.copy():
+			eruit[sys] = cls.nice_name(sys)
+		return eruit
 
 	@classmethod
 	def init(cls):
@@ -109,11 +146,23 @@ class Sysls:
 				cls._sysmem[syslname] = d
 
 	@classmethod
-	def get_sysl(cls, syslname: str) -> dict|None:
+	def get_sysl(cls, syslname: str, other=False) -> dict|None:
 		# gets dict with id:int as key
 		if syslname in cls._sysmem:
-			return cls._sysmem[syslname]
+			return cls._sysmem[syslname].copy()
+		elif other is True:
+			try:
+				return Pickles.read(os.path.join(cls._systempath, f"{syslname}.pickle"))
+			except:
+				return None
 		return None
+
+	@classmethod
+	def get_sysl_as_list(cls, syslname: str) -> list|None:
+		if not syslname in cls._sysmem:
+			return None
+		sd = cls._sysmem[syslname].copy()
+		return list(sd.values())
 
 	@classmethod
 	def get_sysl_item(cls, syslname: str, id) -> any:
@@ -127,6 +176,14 @@ class Sysls:
 	def set_sysl_item(cls, syslname: str, id: int, value) -> bool:
 		try:
 			cls._sysmem[syslname][id] = value
+		except:
+			return False
+		return cls.save_sysl(syslname)
+
+	@classmethod
+	def del_sysl_item(cls, syslname: str, id: int) -> bool:
+		try:
+			del(cls._sysmem[syslname][id])
 		except:
 			return False
 		return cls.save_sysl(syslname)
@@ -146,11 +203,27 @@ class Sysls:
 		return False
 
 	@classmethod
-	def make_sysl(cls, syslname: str, d) -> bool:
-		if syslname not in cls._sysls:
+	def make_sysl(cls, syslname: str, d, other=False) -> bool:
+		if not other and syslname not in cls._sysls:
 			return False
 		pad = os.path.join(cls._systempath, f"{syslname}.pickle")
 		return Pickles.write(pad, d)
+
+	@classmethod
+	def get_model(cls) -> dict:
+		model = dict(
+			id = {'default': 0},
+			name = {'default': ''},
+			color = {'default': ''},
+			extra = {'default': ''},
+			status = {'default': 'actief'},
+			ordering = {'default': 0},
+		)
+		return model
+
+	@classmethod
+	def get_fields(cls) -> list:
+		return list(cls.get_model().keys())
 
 Sysls.init()
 

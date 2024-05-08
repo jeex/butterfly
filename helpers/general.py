@@ -284,7 +284,10 @@ class ListDicts:
 
 	@staticmethod
 	def sortlistofdicts(lijst: list, sleutel: str|int, reverse=False) -> list:
-		return sorted(lijst, key=lambda d: d[sleutel], reverse=reverse)
+		try:
+			return sorted(lijst, key=lambda d: d[sleutel], reverse=reverse)
+		except:
+			return lijst
 
 
 class IOstuff:
@@ -305,19 +308,6 @@ class IOstuff:
 			else:
 				normalized[key] = empty_record[key]
 		return normalized
-
-	@classmethod
-	def _unkwoot(cls, erin):
-		try:
-			return unkwoot(erin)
-		except:
-			return ''
-
-	@classmethod
-	def _kwoot(cls, erin):
-		# also removes double spaces
-		erin = re.sub(' +', ' ', erin)
-		return kwoot(erin, safe='', encoding='utf-8', errors='replace')
 
 	@classmethod
 	def normalize_keys(cls, record, emptyrecord) -> dict:

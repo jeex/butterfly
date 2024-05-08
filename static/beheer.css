@@ -1,0 +1,39 @@
+section{
+    margin: 1em 0;
+    border: 1px solid var(--donkergrijs);
+    padding: 1em;
+}
+section.table th{
+    background-color: var(--donkergrijs);
+    color: var(--wit);
+    padding: 0.5em 1em;
+    border-radius: 1px;
+    font-family: "Roboto Mono", monospace;
+    font-size: 0.8em;
+}
+section.table td{
+    padding: 0.25em 0.5em;
+    font-family: "Roboto Mono", monospace;
+    font-size: 0.8em;
+}
+
+
+form.edit{
+
+}
+input[type="submit"],
+button{
+    padding: 0.25em 0.5em;
+    font-weight: 600;
+}
+input[type="submit"][name="order"]{
+    font-weight: 300;
+    font-size: 0.8em;
+}
+form.edit > p{
+    margin-top: 0.5em;
+}
+form.edit > p > span{
+    display: inline-block;
+    width: 120px;
+}

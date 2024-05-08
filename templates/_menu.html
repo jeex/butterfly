@@ -1,0 +1,19 @@
+<header>
+    <menu id="mainmenu">
+        <ul>
+            <li class="{{ 'actief'|safe if menuitem == 'home' }}"><a href="/">home</a></li>
+            {% if 'studenten' in props._rollen %}
+            <li class="{{ 'actief'|safe if menuitem == 'studenten' }}"><a href="/">studenten</a></li>
+            {% endif %}
+            {% if 'soc' in props._rollen %}
+            <li class="{{ 'actief'|safe if menuitem == 'soc' }}"><a href="/">SoC</a></li>
+            {% endif %}
+            {% if 'groepen' in props._rollen %}
+            <li class="{{ 'actief'|safe if menuitem == 'groepen' }}"><a href="/">groepen</a></li>
+            {% endif %}
+            {% if 'beheer' in props._rollen %}
+                <li class="{{ 'actief'|safe if menuitem == 'beheer' }}"><a href="/system">beheer</a></li>
+                <li class="{{ 'actief'|safe if menuitem == 'website' }}"><a href="/website">cpnits.com</a></li>
+            {% endif %}
+        </ul>
+    </menu>

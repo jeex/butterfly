@@ -1,0 +1,331 @@
+{% include '_head.html' %}
+
+<!-- product section start -->
+<div class="product_section layout_padding">
+    <div class="container">
+        <div class="filter-menu">
+        {% set filters = ['stud', 'reg', 'alumni', 'failed', 'noshow', 'all'] %}
+        {% for f in filters %}
+            <a href="/studenten/{{ f }}" class="filter {{ 'actief'|safe if filter == f }}">{{ f }} {{ ' ['+students|length|string+']'|safe if filter == f }}</a>
+        {% endfor %}
+            <form action="/studenten/zoek" method="get"><input type="text" name="student-zoek" value="" placeholder="Zoek op naam"> <input type="submit" name="go" value="go"></form></div>
+        </div>
+
+        <div class="product_section_2">
+            <table>
+                <thead>
+                    <tr>
+                        <th id=""><input type="checkbox" name="add" value="all"></th>
+                        <th id="id"><span>&uarr;</span>id</th>
+                        <th id="studstatus"><span></span>status</th>
+                        <th id="groep"><span></span>groep</th>
+                        <th id="naam"><span></span>naam</th>
+
+                        {% if filter in ['stud'] %}
+                            <th id="portfolio_url"><span></span>pf</th>
+                        {% endif %}
+
+                        <th id="mvo"><span></span>mvo</th>
+
+                        {% if filter in ['stud', 'alumni', 'notpassed', 'all'] %}
+                            <th id="cijfer"><span></span>cijfer</th>
+                            <th id="cijferdatum"><span></span>d.d.</th>
+                        {% endif %}
+
+
+                        <th id="startjaar"><span></span>jaar</th>
+                        <th id="startperiode"><span></span>p</th>
+                        <th id="credits"><span></span>ecs</th>
+                        <th id="taal"><span></span>taal</th>
+                        <th id="module"><span></span>module</th>
+                        <th id="variant"><span></span>variant</th>
+                        <th id="herkomst"><span></span>herkomst</th>
+                        <th id="instituut"><span></span>instituut</th>
+                        <th id="opleiding"><span></span>opleiding</th>
+                        <th id="aanmaakdatum"><span></span>aanmaak</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for s in students %}
+                    <tr id="{{ s._try('id') }}">
+                        <td id=""><input type="checkbox" name="add" value="{{ s._try('id') }}"></td>
+                        <td data-th="id">{{ s._try('id')|vier }}</td>
+                        <td data-th="studstatus" data-idnr="{{ s._try_id('studstatus') }}" style="background-color: {{ s._try_l('status', field='kleur') }};">{{ s._try_l('studstatus')|nbsp|safe }}</td>
+                        <td data-th="groep" data-idnr="{{ s._try_id('groep') }}" style="background-color: {{ s._try_l('groep', field='kleur') }};">{{ s._try_l('groep')|nbsp|safe }}</td>
+                        <td data-th="naam" >{{ s._try('naam')|nbsp|safe }}</td>
+
+                        {% if filter in ['stud'] %}
+                            <td data-th="cijfer" >{{ s._pfurl()|safe }}</td>
+                        {% endif %}
+
+                        <td data-th="mvo" data-idnr="{{ s._try('mvo') }}" >{{ s._try_l('mvo') }}</td>
+
+                        {% if filter in ['stud', 'alumni', 'notpassed', 'all'] %}
+                            <td data-th="cijfer" >{{ s._grade()|nbsp|safe }}</td>
+                            <td data-th="cijferdatum" >{{ s._try('cijferdatum')|nbsp|safe }}</td>
+                        {% endif %}
+
+                        <td data-th="startjaar" data-idnr="{{ s._try_id('startjaar') }}" >{{ s._try_l('startjaar') }}</td>
+                        <td data-th="startperiode" data-idnr="{{ s._try_id('startperiode') }}" >{{ s._try_l('startperiode') }}</td>
+                        <td data-th="credits" >{{ s._try('credits') }}</td>
+                        <td data-th="taal" data-idnr="{{ s._try_id('taal') }}" >{{ s._try_l('taal') }}</td>
+                        <td data-th="module" data-idnr="{{ s._try_id('module') }}" >{{ s._try_l('module')|nbsp|safe }}</td>
+                        <td data-th="variant" data-idnr="{{ s._try_id('variant') }}" >{{ s._try_l('variant') }}</td>
+                        <td data-th="herkomst" data-idnr="{{ s._try_id('herkomst') }}" >{{ s._try_l('herkomst') }}</td>
+                        <td data-th="instituut" data-idnr="{{ s._try_id('instituut') }}" >{{ s._try_l('instituut')|nbsp|safe }}</td>
+                        <td data-th="opleiding" data-idnr="{{ s._try_id('opleiding') }}" >{{ s._try_l('opleiding')|nbsp|safe }}</td>
+                        <td data-th="aanmaakdatum" >{{ s._try('aanmaakdatum')|nbsp|safe }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <input type="submit" name="tocsv" value="Als CSV" > <input type="submit" name="togroup" value="Naar groep" >
+        </div>
+    </div>
+</div>
+<!-- product section end -->
+
+
+
+{% include '_foot.html' %}
+<script>
+var filters = {}; // column:[value]
+
+let filters_count_shown = function(){
+    var shown = 0
+    $.each($('tbody tr'), function(){
+        if($(this).is(":visible")){
+            shown++;
+        }
+    });
+    return shown;
+}
+
+let filters2string = function(){
+    var eruit = ''
+    for(key in filters){
+        eruit += '<strong>'+key+'</strong> = '+filters[key].toString()+'<br>'
+    }
+    return eruit.replaceAll(',', ', ');
+}
+
+let add_2_filter = function(td_o, empty) {
+    let key = td_o.attr('data-th');
+    if(td_o.attr('id') == '') {
+        // checkbox, ignore
+        return;
+    }
+    if(empty){
+        filters = {}
+    }
+    if (filters.hasOwnProperty(key)) {
+        if (!filters[key].includes(td_o.text())) {
+            filters[key].push(td_o.text())
+        }
+    } else {
+        filters[key] = [td_o.text()]
+    }
+}
+
+let filteren = function(){
+    $('tbody tr').hide();
+    $('tbody td').removeClass('filteredcel')
+    $.each($('tbody tr'), function(){
+        let rij = $(this);
+        var tonen = true;
+        for(var key in filters){
+            // ignore checkbox value
+            if(key == 'checked'){
+                continue;
+            }
+            let cel = rij.find('td[data-th="'+key+'"]'); // cel met te filteren kolom
+            if(filters[key].includes(cel.text())){
+                cel.addClass('filteredcel')
+            }else{
+                tonen = tonen && false;
+            }
+        }
+        if(tonen){
+            rij.show();
+        }
+    });
+    $('td input[type="checkbox"]:checked').parent().parent().show();
+}
+
+let sortTable = function(table, td_nr, order) {
+    let asc = order === 'asc';
+    let tbody = table.find('tbody');
+    tbody.find('tr').sort(function(a, b) {
+        if (asc) {
+            return $('td:nth-child('+td_nr+')', a).text().localeCompare($('td:nth-child('+td_nr+')', b).text());
+        } else {
+            return $('td:nth-child('+td_nr+')', b).text().localeCompare($('td:nth-child('+td_nr+')', a).text());
+        }
+    }).appendTo(tbody);
+}
+
+let tabel2excel = function(){
+    // Select rows from table_id
+    var csvtext = '';
+    var eerste = true;
+    $.each($('thead th'), function(){
+        if(eerste){
+            eerste = false;
+        }else{
+            $(this).find('span').html(''); // pijltje eruit
+            csvtext += $(this).text()+',';
+        }
+    })
+    csvtext += "\n";
+    $.each($('tbody tr'), function(){
+        if($(this).is(":visible")){
+            var eerste = true;
+            $.each($(this).find('td'), function(){
+                if(eerste){
+                    eerste = false;
+                }else{
+                    let t = $(this).text();
+                    csvtext += t + ',';
+                }
+            })
+            csvtext += "\n";
+        }
+    });
+    var encodedUri = encodeURI(csvtext);
+    var link = document.createElement("a");
+    link.setAttribute("href", "data:text/csv;charset=utf-8,\uFEFF" + encodedUri);
+    link.setAttribute("download","report.csv");
+    link.click();
+ }
+
+$(function(){
+    $('button[name="tocsv"]').on('click', function(){
+        tabel2excel();
+    })
+
+    // sort on column
+    $('table th').on('click', function(){
+        let th = $(this);
+        var i = 0;
+        var richting = 'asc';
+        $.each($('table th'), function(k, v){
+            i++;
+            if($(this).attr('id') == th.attr('id')){
+                // get asc/desc
+                if($(this).find('span').text() == String.fromCharCode(8593)){
+                    // was up, goes down
+                    richting = 'asc';
+                }else if($(this).find('span').text() == String.fromCharCode(8595)){
+                    // was down, goes up
+                    richting = 'desc';
+                }
+                sortTable($('table'), i, richting)
+            }
+        });
+        $('th span').html('');
+        if(richting == 'asc'){
+            th.find('span').html('&darr;');
+        }else{
+            th.find('span').html('&uarr;');
+        }
+    });
+
+    // checkboxes on and off
+    $('th input[type="checkbox"]').on('change', function(){
+        if($(this).is(':checked')){
+            $('tr:visible td input[type="checkbox"]').prop('checked', true);
+        }else{
+            $('tr:visible td input[type="checkbox"]').prop('checked', false);
+        }
+    })
+
+    // show-hide on cel value
+    $('table td').on('dblclick', function(){
+        let td_o = $(this)
+        // https://craftpip.github.io/jquery-confirm/
+        $.confirm({
+            columnClass: 'medium',
+            containerFluid: true,
+            title: 'Filters ['+filters_count_shown()+'] :',
+            content: filters2string(),
+            autoClose: 'cancel|8000',
+            buttons: {
+                cancel: {
+                    text: 'Annuleer',
+                    btnClass: 'btn-white',
+                    keys: ['esc'],
+                    action: function(){
+                        // niets doen
+                    }
+                },
+                reset_filter: {
+                    text: 'Reset',
+                    btnClass: 'btn-red',
+                    keys: [],
+                    action: function(){
+                        filters = {}
+                        $('tbody td').removeClass('filteredcel')
+                        $('tbody tr').show();
+                    }
+                },
+                new_filter: {
+                    text: 'Nieuw & Go',
+                    btnClass: 'btn-warning',
+                    keys: [],
+                    action: function(){
+                        add_2_filter(td_o, true);
+                        filteren();
+                    }
+                },
+                add_to_filter: {
+                    text: 'Voeg toe',
+                    btnClass: 'btn-blue',
+                    keys: [],
+                    action: function(){
+                        add_2_filter(td_o, false)
+                    }
+                },
+                go_filter: {
+                    text: '& Go',
+                    btnClass: 'btn-blue',
+                    keys: ['enter'],
+                    action: function(){
+                        add_2_filter(td_o, false)
+                        filteren();
+                    }
+                }
+            },
+            onDestroy: function(){
+                // niets
+            },
+        });
+    })
+
+    $('td[data-th="groep"]')
+        .on('contextmenu', function(e){
+            e.preventDefault();
+            // alert('groep: ' + $(this).text() + ' ' + $(this).attr('data-idnr'))
+            window.location.replace('/studenten/groep/' + $(this).attr('data-idnr'));
+        })
+        .each(function(){
+            let kleur = $(this).css('background-color');
+            let contra = calc_contra_color(kleur)
+            $(this).css('color', contra);
+        });
+
+    // sort at start
+    {% if filter == 'reg' %}
+        sortTable($('table'), 5, 'asc'); //  op naam asc
+    {% elif filter == 'stud' %}
+        sortTable($('table'), 5, 'asc'); // op naam asc
+    {% elif fitler == 'alumni' %}
+        sortTable($('table'), 9, 'asc'); // op jaar asc
+     {% elif fitler == 'notpassed' %}
+        sortTable($('table'), 9, 'asc'); // op jaar asc
+    {% elif fitler == 'noshow' %}
+        sortTable($('table'), 5, 'asc'); // op naam asc
+    {% else %}
+        sortTable($('table'), 5, 'asc'); // op naam asc
+    {% endif %}
+});
+</script>

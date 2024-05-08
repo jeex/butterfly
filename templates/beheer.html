@@ -1,0 +1,87 @@
+{% include '_head.html' %}
+<script type="text/javascript" src="/static/beheer.js"></script>
+<link rel="stylesheet" href="/static/beheer.css" />
+
+</head>
+<body>
+    {% include '_menu.html' %}
+    <menu id="submenu">
+            <ul>
+                {% for thing in lijsten %}
+                    <li class="{{ 'actief'|safe if thing == syslname }}"><a href="/system/{{ thing }}">{{ lijsten[thing] }}</a></li>
+                {% endfor %}
+            </ul>
+        </menu>
+    </header>
+    <main>
+        {% if syslname != '' %}
+            <section class="form">
+                <form class="edit" name="edit" action="" method="post">
+                    <p>
+                        <span>id</span>
+                        <input readonly type="number" name="id" value="">
+                        <input type="hidden" name="ordering" value="">
+                    </p>
+                    <p>
+                        <span>name</span>
+                        <input type="text" name="name" value="">
+                    </p>
+                    <p>
+                        <span>color</span>
+                        <input type="color" name="color" value="#ffffff">
+                    </p>
+                    <p>
+                        <span>extra</span>
+                        <input type="text" name="extra" value="">
+                    </p>
+                    <p>
+                        <span>status</span>
+                        passive: <input type="radio" name="status" value="0" checked>
+                        active: <input type="radio" name="status" value="1">
+                    </p>
+                    <p>
+                        <span><button class="new" style="color: green;">New</button></span>
+                        <input class="verborgen" style="color: var(--signaal);" type="submit" name="action" value="Delete">
+                        <input class="verborgen" type="submit" name="action" value="Save">
+                    </p>
+                </form>
+            </section>
+            <section class="table">
+                <form name="order" method="post" action="/system/ordering/{{ syslname }}">
+                    <input type="hidden" name="ordering" value="">
+                    <input type="submit" name="order" value="Save ordering">
+                </form>
+                <table>
+                    <thead>
+                        <tr>
+                        {% for thing in fields %}
+                            {% if thing == 'ordering' %}
+                                <th style="display: none;" id="{{ thing }}"><span></span> {{ thing }}</th>
+                            {% else %}
+                                <th id="{{ thing }}"><span></span> {{ thing }}</th>
+                            {% endif %}
+                        {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody class="sort">
+                    {% for row in allitems %}
+                        <tr data-id="{{ row._try('id') }}" data-ordering="{{ row._try('ordering') }}">
+                            <td class="idfield">{{ row._try('id') }}</td>
+                            <td>{{ row._try('name')|nonone }}</td>
+                            <td class="kleur" style="background-color: {{ row._try('color') }};">{{ row._try('color')|nonone }}</td>
+                            <td>{{ row._try('extra')|nonone }}</td>
+                            <td>{% if row._try('status') == 1 %}active{% else %}passive{% endif %}</td>
+                            <td style="display: none;" >{{ row._try('ordering') }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+        {% endif %}
+    </main>
+<script>
+    // if id given in url
+    let id = {{ id }};
+    let syslname = "{{ syslname }}";
+</script>
+</body>

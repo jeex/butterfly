@@ -1,125 +1,135 @@
 from flask import session, redirect, request, Blueprint, render_template
 
-from helpers.helpers import Casting, Timetools, IOstuff, ListDicts
+from helpers.general import Casting, Timetools, IOstuff, ListDicts, JINJAstuff
 
-def get_student_model():
-	return dict(
-		id = {'default': 0},
-		naam = {'default': ''},
-		mvo = {'default': ['', ''], 'from': 'sys_gender'},
-		email = {'default': ''},
-		studentcode = {'default': ''},
-		password = {'default': ''},
-		aanmaakdatum = {'default': '0000-00-00 00:00:00'},
-		studstatus = {'default': [0, ''], 'from': 'sys_status'},
-		portfolio_url = {'default': ''},
+class StudentBaseClass:
+	@classmethod
+	def get_model(cls) -> dict:
+		return dict()
 
-		cijfer = {'default': ['', 0], 'from': 'sys_grade'}, # tweede vermelding is percentage oude grade
-		cijferdatum = {'default': ['0000-00-00 00:00:00', '']}, # tweede vermelding is de oude grademoment_ID
+	@classmethod
+	def get_empty(cls) -> dict:
+		m = cls.get_model()
+		newm = dict()
+		for key, val in m.items():
+			newm[key] = val['default']
+		return newm
 
-		taal = {'default': ['', ''], 'from': 'sys_language'},
-		startjaar = {'default': [0, ''], 'from': 'sys_year'},
-		startperiode = {'default': [0, ''], 'from': 'sys_period'},
-		credits = {'default': 0},
+# handles one student
+class Student(StudentBaseClass):
+	@classmethod
+	def get_model(cls) -> dict:
+		return dict(
+			# about the student - per enrollment. So enroll twice, twice in database
+			id = {'default': 0},
+			firstname = {'default': ''},
+			lastname = {'default': ''},
+			email = {'default': ''},
+			created_ts = {'default': 0},
+			todo = {'default': 0},
+			pf_url = {'default': ''},
+			kom_code = {'default': ''}, # student code for KOM students (other school)
+			nhls_code = {'default': 0}, # student code at nhlstenden also for KOM
+			password={'default': ''},
+			s_gender={'default': 0, 'from': 's_gender'},
 
-		instituut = {'default': [0, ''], 'from': 'sys_uni'},
-		opleiding = {'default': [0, ''], 'from': 'sys_program'},
-		module = {'default': [0, ''], 'from': 'sys_module'},
-		variant = {'default': [0, ''], 'from': 'sys_variant'},
-		herkomst = {'default': [0, ''], 'from': 'sys_origin'},
-		groep = {'default': [0, ''], 'from': 'groups'},
+			# about the students current situation
+			s_origin = {'default': 0, 'from': 's_origin'},
+			s_uni = {'default': 0, 'from': 's_uni'},
+			s_program = {'default': 0, 'from': 's_program'},
 
-		notities = {'default': [], 'model': 'model_notitie'},
-		aanwezig = {'default': [], 'model': 'model_aanwezig'}, # aanwezigheid
-		opdrachten = {'default': [], 'model': 'model_opdracht'}, # afvinken voltooide opdrachten
-		controles = {'default': [], 'model': 'model_controle'}, # controles die docent uitvoert (portfolio en zo)
-		toetsen = {'default': [], 'model': 'model_toets'}, # model_voortgangstoets met daarin model_antwoord
-	)
+			# about the students minor course
+			s_year={'default': 0, 'from': 's_year'},
+			s_term={'default': 0, 'from': 's_term'},
+			s_lang={'default': 0, 'from': 's_lang'},
+			s_ec={'default': 0, 'from': 's_ec'},
+			s_course={'default': 0, 'from': 's_course'},
+			s_stream={'default': 0, 'from': 's_stream'},
 
-def get_empty_student():
-	m = get_student_model()
-	newm = dict()
-	for key, val in m.items():
-		newm[key] = val['default']
-	return newm
+			# list of notes models
+			m_notes = {'default': [], 'model': 'm_note'},
 
-model_notitie = dict(
-	notitie = {'default': ''},
-	docent = {'default': [0, '']}, # user_ID en alias
-	# student_id komt te vervallen want dict in student_dict
-	# groepen_id vervallen
-	afgehandeld = {'default': False},
-	aanmaakdatum = {'default': '0000-00-00 00:00:00'},
-)
-def get_notitie_model():
-	return model_notitie.copy()
-def get_empty_notitie():
-	m = model_notitie.copy()
-	newm = dict()
-	for key, val in m.items():
-		newm[key] = val['default']
-	return newm
+			# list of grading models moments, grades en timestamps
+			m_gradings = {'default': [], 'model': 'm_grading'},
 
+			# list of group models, groups, checks, timestamps
+			m_groups = {'default': [], 'model': 'm_group'},
 
-model_toets = dict(
-	start = {'default': '0000-00-00 00:00:00'},
-	eind = {'default': '0000-00-00 00:00:00'},
-	cijfer = {'default': '', 'from': ['o', 'v', 'u']},
-	antwoorden = {'default': []},
-)
-def get_toets_model():
-	return model_toets.copy()
-def get_empty_toets():
-	m = model_toets.copy()
-	newm = dict()
-	for key, val in m.items():
-		newm[key] = val['default']
-	return newm
+			# list of status models
+			m_statusses = {'default': [], 'model': 'm_studentstatus'},
 
+			# list of checks on this student
+			circulars = {'default': [], 'model': 'm_setofcirculars'},
+		)
 
-model_opdracht  = dict(
-	opdracht = {'default': 0}, # ID van de opdracht
-	antwoord = {'default': ''}, # resultaat na uitvoeren van de opdracht
-	cijfer = {'default': '', 'from': ['o', 'v']},
-)
-def get_opdracht_model():
-	return model_opdracht.copy()
-def get_empty_opdracht():
-	m = model_opdracht.copy()
-	newm = dict()
-	for key, val in m.items():
-		newm[key] = val['default']
-	return newm
+# handles a note for a student
+class Note(StudentBaseClass):
+	@classmethod
+	def get_model(cls) -> dict:
+		return dict(
+			note = {'default': ''},
+			alias = {'default': ''}, # teacher
+			created_ts = {'default': 0},
+			todo = {'default': True},
+			handeled_ts = {'default': 0},
+		)
 
+# handles one moment of grading for one student
+class Grading(StudentBaseClass):
+	@classmethod
+	def get_model(cls) -> dict:
+		return dict(
+			s_grading = {'default': 0, 'from': 's_grading'},
+			created_ts = {'default': 0},
+			grade = {'default': 0},
+			progress_ts = {'default': 0},
+			alias = {'default': ''},
+		)
 
-model_aanwezig = dict(
-	datum = {'default': '0000-00-00 00:00:00'},
-	present = {'default': 0, 'from': [0, 1, 2]}, # 0, 1, 2 = niet, afgemeld/half, wel
-)
-def get_aanwezig_model():
-	return model_aanwezig.copy()
-def get_empty_aanwezig():
-	m = model_aanwezig.copy()
-	newm = dict()
-	for key, val in m.items():
-		newm[key] = val['default']
-	return newm
+# handles assignment of one student to a group
+class Group(StudentBaseClass):
+	@classmethod
+	def get_model(cls) -> dict:
+		return dict(
+			s_group = {'default': 0, 'from': 's_group'},
+			addedto_ts = {'default': 0}, # student placed in group
+			alias = {'default': ''}, # by
+		)
 
+# handles single of many studentstatusses
+class Studentstatus(StudentBaseClass):
+	@classmethod
+	def get_model(cls) -> dict:
+		return dict(
+			s_student = {'default': 0, 'from': 's_status'},
+			addedto_ts = {'default': 0}, # status for student
+			alias = {'default': ''}, # by
+		)
 
-model_controle = dict(
-	datum = {'default': '0000-00-00 00:00:00'},
-	present = {'default': 0, 'from': [0, 1, 2]}, # 0, 1, 2 = niet, afgemeld/half, wel
-)
-def get_controle_model():
-	return model_controle.copy()
-def get_empty_controle():
-	m = model_controle.copy()
-	newm = dict()
-	for key, val in m.items():
-		newm[key] = val['default']
-	return newm
+# handles single check of many on student = one single field in a set of circulars
+class Circular(StudentBaseClass):
+	@classmethod
+	def get_model(cls) -> dict:
+		return dict(
+			name = {'default': ''}, # description of the circular
+			created_ts = {'default': 0},
+			circular = {'default': 0, 'from': 's_circular'}, # one of the click colors: red orange green gray
+			updated_ts = {'default': 0},
+			alias = {''}, # teacher filling this
+		)
 
-class  StudendIo(IOstuff):
+class SetOfCirculars(StudentBaseClass):
+	@classmethod
+	def get_model(cls) -> dict:
+		return dict(
+			setname = {'default': ''},
+			created_ts = {'default': 0},
+			circulars = {'default': list()},
+			updated_ts = {'default': 0},
+			alias={''},  # teacher creating this
+		)
+
+class  StudendJinja(JINJAstuff):
 	def _grade(self):
 		g = self._try('cijfer')
 		try:
