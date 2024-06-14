@@ -1,44 +1,44 @@
-from flask import session, redirect, request, Blueprint, render_template
+from flask import current_app, redirect, request, Blueprint, render_template
 
-from helpers.general import Casting, Timetools, IOstuff, ListDicts, JINJAstuff
-from helpers.globalclasses import Sysls, Props
+from helpers.general import Casting, IOstuff, ListDicts, JINJAstuff
 
 def jinja_object(ding):
-	return JINJAstuff(ding, Sysls.get_model())
+	sysls_o = current_app.config['Sysls']
+	return JINJAstuff(ding, sysls_o.get_model())
 
 # =============== endpoints =====================
-ep_system = Blueprint(
-	'ep_system', __name__,
-	url_prefix="/system",
+ep_beheer = Blueprint(
+	'ep_beheer', __name__,
+	url_prefix="/beheer",
 	template_folder='templates',
     static_folder='static',
 	static_url_path='static',
 )
 
 menuitem = 'beheer'
-Props.set_prop('window_title', 'beheer')
 
-@ep_system.get('/')
-@ep_system.get('/<path:sysl>')
-@ep_system.get('/<path:sysl>/<int:id>')
+@ep_beheer.get('/')
+@ep_beheer.get('/<path:sysl>')
+@ep_beheer.get('/<path:sysl>/<int:id>')
 def kiezen(sysl='', id=0):
-	if not Props.magda('beheer'):
+	if not current_app.config['Props'].magda(['beheer']):
 		return redirect('/')
 
-	# system lijsten
-	lijsten = Sysls.get_lijsten()
+	# beheer lijsten
+	sysls_o = current_app.config['Sysls']
+	lijsten = sysls_o.get_lijsten_nicename()
 	if sysl != '':
-		allitems = Sysls.get_sysl_as_list(sysl)
+		allitems = sysls_o.get_sysl_as_list(sysl)
 		allitems = ListDicts.sortlistofdicts(allitems, 'ordering')
 		for i in range(len(allitems)):
 			allitems[i] = jinja_object(allitems[i])
 	else:
 		allitems = dict() # alle items van deze sysl
-	fields = Sysls.get_fields()
+	fields = sysls_o.get_fields()
 	return render_template(
 		'beheer.html',
 		menuitem=menuitem,
-		props=Props,
+		props=current_app.config['Props'],
 		lijsten=lijsten,
 		syslname=sysl,
 		fields=fields,
@@ -46,72 +46,69 @@ def kiezen(sysl='', id=0):
 		id=id,
 	)
 
-@ep_system.post('/<path:sysl>')
-@ep_system.post('/<path:sysl>/<int:id>')
-def ep_system_post(sysl, id=0):
-	if not Props.magda('beheer'):
-		return redirect('/')
-
+@ep_beheer.post('/<path:sysl>')
+@ep_beheer.post('/<path:sysl>/<int:id>')
+def ep_beheer_post(sysl, id=0):
 	sysl = sysl.strip()
 	if sysl == '':
-		return redirect(f'/system')
+		return redirect(f'/beheer')
 
 	required = ['id', 'name', 'color', 'extra', 'status', 'action', 'ordering']
 	if not IOstuff.check_required_keys(request.form, required):
-		return redirect(f'/system/{sysl}')
+		return redirect(f'/beheer/{sysl}')
 	required.remove('action')
 	d = IOstuff.crunch_singles(request.form, required)
 	d['id'] = Casting.int_(d['id'], default=0)
 	d['status'] = Casting.int_(d['status'], default=0)
 	d['ordering'] = Casting.int_(d['ordering'], default=0)
 	if d['id'] == 0:
-		return redirect(f'/system/{sysl}')
-	current = Sysls.get_sysl_item(sysl, d['id'])
+		return redirect(f'/beheer/{sysl}')
+
+	sysls_o = current_app.config['Sysls']
+	current = sysls_o.get_sysl_item(sysl, d['id'])
 	if not current is None:
 		if d['id'] != current['id']:
 			# hier gaat iets mis
 			print('deze')
-			return redirect(f'/system/{sysl}')
+			return redirect(f'/beheer/{sysl}')
 
 	if current is None and request.form.get('action') == 'Save':
 		# new
-		Sysls.set_sysl_item(sysl, d['id'], d)
+		sysls_o.set_sysl_item(sysl, d['id'], d)
 
 	elif request.form.get('action') == 'Delete':
-		Sysls.del_sysl_item(sysl, d['id'])
+		sysls_o.del_sysl_item(sysl, d['id'])
 
 	elif request.form.get('action') == 'Save':
 		# update
-		Sysls.set_sysl_item(sysl, d['id'], d)
+		sysls_o.set_sysl_item(sysl, d['id'], d)
 	else:
 		return redirect(f'/system')
 
-	return redirect(f'/system/{sysl}/{d["id"]}')
+	return redirect(f'/beheer/{sysl}/{d["id"]}')
 
-@ep_system.post('/ordering/<path:sysl>')
+@ep_beheer.post('/ordering/<path:sysl>')
 def post_ordering(sysl):
-	if not Props.magda('beheer'):
-		return redirect('/')
-
 	required = ['ordering', 'order']
 	if not IOstuff.check_required_keys(request.form, required):
-		return redirect(f'/system/{sysl}')
+		return redirect(f'/beheer/{sysl}')
 	try:
 		ordering = request.form.get('ordering').split(',')
 	except:
 		print(f"ordering mislukt {request.form.get('ordering')}")
-		return redirect(f'/system/{sysl}')
+		return redirect(f'/beheer/{sysl}')
 
-	alle = Sysls.get_sysl(sysl)
+	sysls_o = current_app.config['Sysls']
+	alle = sysls_o.get_sysl(sysl)
 	oo = 1
 	for id in ordering:
 		id = int(id)
 		# ordering contains id's in requested order
 		if not id in alle.keys():
 			# print(f"ontbrekende key {id} in {alle}")
-			return redirect(f'/system/{sysl}')
+			return redirect(f'/beheer/{sysl}')
 		alle[id]['ordering'] = oo
 		# alle[id]['status'] = 1
 		oo += 1
-	Sysls.make_sysl(sysl, alle)
-	return redirect(f'/system/{sysl}')
+	sysls_o.make_sysl(sysl, alle)
+	return redirect(f'/beheer/{sysl}')

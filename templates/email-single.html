@@ -1,0 +1,63 @@
+{% include '_head.html' %}
+<link rel="stylesheet" href="/static/studenten.css" />
+
+</head>
+<body>
+    {% include '_menu.html' %}
+        <menu class="submenu">
+            <ul>
+                {% for thing in alle %}
+                    <li class="{{ 'actief'|safe if thing == mail._try('name') }}"><a href="/emails/{{ thing }}">{{ thing }}</a></li>
+                {% endfor %}
+            </ul>
+        </menu>
+    </header>
+    <main>
+        <div class="links topcenter" style="">
+            Beschikbare placeholders:
+                {% for m in placeholders %}
+                    <span title="Klik en kopieer" class="placeholder">&#123;{{ m }}&#125;</span>,
+                {% endfor %}
+
+        </div>
+        <form class="single-form" method="post" action="/emails/{{ mail._try('name') }}">
+            <p>
+                <label><strong>NL</strong> onderwerp</label>
+                <input style="width: 400px;" type="text" name="nl_subject" value="{{ mail._try('nl_subject') }}">
+            </p>
+            <p>
+                <label>&nbsp;</label>
+                <textarea
+                    style="width: 600px;"
+                    rows="20"
+                    name="nl_text"
+            >{{ mail._try('nl_text') }}</textarea>
+            </p>
+            <hr>
+            <p>
+                <label><strong>EN</strong> subject</label>
+                <input style="width: 400px;"  type="text" name="en_subject" value="{{ mail._try('en_subject') }}">
+            </p>
+            <p>
+                <label>&nbsp;</label>
+                <textarea
+                    style="width: 600px;"
+                    rows="20"
+                    name="en_text"
+            >{{ mail._try('en_text') }}</textarea>
+            </p>
+            <p>
+                <label>&nbsp</label>
+                <input type="submit" name="save" value="Opslaan">
+            </p>
+        </form>
+    </main>
+<script>
+$(function(){
+    $('.placeholder').on('click', function(){
+        let v = $(this).html().trim();
+        navigator.clipboard.writeText(v);
+    });
+})
+</script>
+</body>

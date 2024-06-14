@@ -1,12 +1,36 @@
 {% include '_head.html' %}
-
+<link rel="stylesheet" href="/static/home.css" />
 
 </head>
 <body>
     {% include '_menu.html' %}
     </header>
-    <main>
-        <h1>Welkom bij CPNITS Butterfly</h1>
-        <p>Geen idee waar deze pagina voor dient</p>
+    <main class="home">
+        <h1>Welkom bij CPNITS Butterfly, {{ props.alias() }}</h1>
+        <p>Het pad naar jouw OneDrive is: <strong>{{ props.odpad() }}</strong></p>
+        <a class="asbutton" href="#">werkt nog niet</a>
+
+        {% if props.magda(['docent']) %}
+            <div style="display: flex; flex-direction: row; justify-content: space-between;">
+                <div style="width: {{ '49%'|safe if huntodos|length > 0 else '100%'|safe }};">
+                    <h2>Todo's voor eigen studenten</h2>
+                    <ul>
+                        {% for t in mijntodos %}
+                            <li class="liggend"><a class="asbutton valop" href="/studenten/single/{{ t._id() }}">{{ t._id()|vier }}</a> {{ t._try('firstname') }} {{ t._try('lastname') }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% if huntodos|length > 0 %}
+                    <div style="width: 49%;">
+                        <h2>Todo's voor andere studenten</h2>
+                        <ul>
+                            {% for t in huntodos %}
+                                <li class="liggend"><a class="asbutton" href="/studenten/single/{{ t._id() }}">{{ t._id()|vier }}</a> {{ t._try('firstname') }} {{ t._try('lastname') }} – {{ t._try('hun')|initials }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
     </main>
 </body>

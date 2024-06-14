@@ -1,14 +1,26 @@
 {% include '_head.html' %}
 <script type="text/javascript" src="/static/beheer.js"></script>
 <link rel="stylesheet" href="/static/beheer.css" />
-
+{% set notadminonly = ['s_uni', 's_program', 's_stream', 's_group'] %}
 </head>
 <body>
     {% include '_menu.html' %}
-    <menu id="submenu">
+        <menu class="submenu">
             <ul>
                 {% for thing in lijsten %}
-                    <li class="{{ 'actief'|safe if thing == syslname }}"><a href="/system/{{ thing }}">{{ lijsten[thing] }}</a></li>
+                    {% if thing in notadminonly %}
+                        <li class="{{ 'actief'|safe if thing == syslname }}"><a href="/beheer/{{ thing }}">{{ lijsten[thing] }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if props.magda(['admin']) %}
+                    <li style="width: 2px; height: 2em; padding: 0; background-color: black; margin-left: 0.25em;"></li>
+                {% endif %}
+
+                {% for thing in lijsten %}
+                    {% if thing not in notadminonly and props.magda(['admin']) %}
+                        <li class="{{ 'actief'|safe if thing == syslname }}"><a href="/beheer/{{ thing }}">{{ lijsten[thing] }}</a></li>
+                    {% endif %}
                 {% endfor %}
             </ul>
         </menu>
@@ -47,7 +59,7 @@
                 </form>
             </section>
             <section class="table">
-                <form name="order" method="post" action="/system/ordering/{{ syslname }}">
+                <form name="order" method="post" action="/beheer/ordering/{{ syslname }}">
                     <input type="hidden" name="ordering" value="">
                     <input type="submit" name="order" value="Save ordering">
                 </form>
@@ -85,3 +97,4 @@
     let syslname = "{{ syslname }}";
 </script>
 </body>
+</html>

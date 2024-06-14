@@ -2,18 +2,44 @@
     <menu id="mainmenu">
         <ul>
             <li class="{{ 'actief'|safe if menuitem == 'home' }}"><a href="/">home</a></li>
-            {% if 'studenten' in props._rollen %}
-            <li class="{{ 'actief'|safe if menuitem == 'studenten' }}"><a href="/">studenten</a></li>
+            <li class="{{ 'actief'|safe if menuitem == 'studenten' }}"><a href="/studenten">studenten</a></li>
+
+            {% if props.magda(['docent', 'beheer']) %}
+            <li class="{{ 'actief'|safe if menuitem == 'groepen' }}"><a href="/groepen">groepen</a></li>
             {% endif %}
-            {% if 'soc' in props._rollen %}
-            <li class="{{ 'actief'|safe if menuitem == 'soc' }}"><a href="/">SoC</a></li>
+
+            {% if props.magda(['docent', 'beheer']) %}
+            <li class="{{ 'actief'|safe if menuitem == 'views' }}"><a href="/views">Views</a></li>
             {% endif %}
-            {% if 'groepen' in props._rollen %}
-            <li class="{{ 'actief'|safe if menuitem == 'groepen' }}"><a href="/">groepen</a></li>
+
+            {% if props.magda(['beheer']) %}
+            <li class="{{ 'actief'|safe if menuitem == 'emails' }}"><a href="/emails">emails</a></li>
             {% endif %}
-            {% if 'beheer' in props._rollen %}
-                <li class="{{ 'actief'|safe if menuitem == 'beheer' }}"><a href="/system">beheer</a></li>
+
+            {% if props.magda(['beheer']) %}
+                <li class="{{ 'actief'|safe if menuitem == 'beheer' }}"><a href="/beheer">beheer</a></li>
+            {% endif %}
+
+            {% if props.magda(['beheer']) %}
                 <li class="{{ 'actief'|safe if menuitem == 'website' }}"><a href="/website">cpnits.com</a></li>
             {% endif %}
         </ul>
+        {% if menuitem in ['studenten', 'groepen'] %}
+            <form name="menu-zoek" style="margin-left: 0.25em;" action="/studenten/zoek" method="get">
+                <input style="height: 2.1em; padding: 0 0.5em;" type="text" name="s" value="" placeholder="Zoek op naam">
+                <input style="height: 2.4em;" type="submit" name="go" value="Zoek">
+            </form>
+        {% endif %}
+        <script>
+        $(function(){
+            $('form[name="menu-zoek"]').on('submit', function(e) {
+                let zoekvak = $(this).find('input[name="s"]');
+                if (zoekvak.val().trim() === ''){
+                    e.preventDefault();
+                    zoekvak.val('');
+                    zoekvak.css('background-color', 'var(--signaal)').css('color', 'white');
+                }
+            })
+        });
+        </script>
     </menu>

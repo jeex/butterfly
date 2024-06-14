@@ -274,6 +274,7 @@ def converteer_notes_per_student(dbcon: Sqlite, id: int) -> list:
 		newnote = dict(
 			note = n['note'],
 			user_id = n['users_ID'],
+			alias = '',
 			done = Casting.int_(n['done'], default=1),
 			created_ts = db_datetime_2_ts(n['aanmaak']),
 		)
@@ -288,11 +289,18 @@ def converteer_student(dbcon: Sqlite, student: dict):
 		scourse = 20
 	else:
 		scourse = student['eentwee_ID']
+
+	# IMP: program 87 moet 32 worden, zit er dubbel in
+	if int(student['opleidingen_ID']) == 87:
+		oplid = 32
+	else:
+		oplid = int(student['opleidingen_ID'])
 	news = dict(
 		id = student['ID'],
 		firstname = fnaam,
 		lastname = anaam,
 		email = student['email'],
+		password = student['password'],
 		created_ts = db_datetime_2_ts(student['aanmaak']),
 		todo = student['todo'],
 		pf_url = student['portfolio_URL'],
@@ -304,13 +312,13 @@ def converteer_student(dbcon: Sqlite, student: dict):
 		s_grading = s_grade,
 		s_lang = conversie_lang(student['lang']),
 		s_origin = student['herkomst_ID'],
-		s_program = student['opleidingen_ID'],
+		s_program = oplid,
 		s_status = conversie_stu_sta(student['studentstatussen_ID']),
 		s_stream = stream,
 		s_term = conversie_startperiode(student['startperiode'], student['eentwee_ID']),
 		s_uni = student['instituten_ID'],
 		s_year = student['startjaar'],
-		g_group = student['groepen_ID'],
+		s_group = student['groepen_ID'],
 	)
 	sql = """
 	INSERT INTO nw_student 
@@ -406,7 +414,7 @@ def nw_db_2_students():
 		except:
 			s['notes'] = []
 		Students.make_student_pickle(id, s)
-		Students.make_student_folder(id, s)
+		Students.make_student_folder(id)
 
 # nw_db_2_students()
 
@@ -421,4 +429,5 @@ converteer_studenten() # gebeurt binnen sqlite
 nw_db_2_students()'''
 
 
-
+# IMP: program 87 moet 32 worden, zit er dubbel in
+# bij pf_url, split op # en dan rest laten vervallen

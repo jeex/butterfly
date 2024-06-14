@@ -1,30 +1,131 @@
-import json
 import bleach
-import random
-import string
-from datetime import datetime, date
+from datetime import datetime
 import pytz
 import time
 import os
-from urllib.parse import quote_plus as kwoot, unquote_plus as unkwoot, urlparse
+import sys
+from urllib.parse import quote_plus as kwoot
 import re
-import subprocess
-import shutil
-from werkzeug.utils import secure_filename
 from flask import redirect
+import pickle
+
+import userpaths as Up
+import appdirs
+from PyQt6.QtWidgets import QApplication, QFileDialog
+
+class Pickles:
+	@classmethod
+	def read(cls, path: str) -> any:
+		try:
+			return pickle.load(open(path, 'rb'))
+		except:
+			pass
+		return None
+
+	@classmethod
+	def write(cls, path: str, d: dict) -> bool:
+		try:
+			pickle.dump(d, open(path, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
+			return True
+		except:
+			pass
+		return False
+
+	@classmethod
+	def delete(cls, path: str) -> bool:
+		try:
+			os.remove(path)
+			return True
+		except:
+			return False
+
+class Mainroad:
+	@classmethod
+	def get_props_path(cls):
+		# if not, make one
+		dirpad = str(os.path.join(appdirs.user_config_dir(), 'JeexButterfly'))
+		if not os.path.isdir(dirpad):
+			os.makedirs(dirpad)
+		propspad = os.path.join(dirpad, 'butterfly_props.pickle')
+		if not os.path.isfile(propspad):
+			Pickles.write(propspad, dict())
+		return propspad
+
+	@classmethod
+	def get_od_path(cls):
+		# from props, if not ask with window
+		propspad = cls.get_props_path()
+		props = Pickles.read(propspad)
+		try:
+			pad = props['od_path']
+			if os.path.isdir(pad):
+				return pad
+		except:
+			pass
+		odpad = cls.pyqt6_ask_od_path()
+		if props is None:
+			props = dict()
+		print(props)
+		print(odpad)
+		props['od_path'] = odpad
+		Pickles.write(propspad, props)
+
+	@classmethod
+	def pyqt6_ask_od_path(cls):
+		# and store in props
+		qt = QApplication(sys.argv)
+		qt.setStyle('Breeze')
+		startat = str(Up.get_my_documents())
+		p = (QFileDialog.getExistingDirectory
+		     (caption="Waar ligt de OneDrive dir met _DATABASE erin?",
+		      directory=startat)
+		     )
+		if p is None or p == '':
+			sys.exit()
+		return p
+
+	@classmethod
+	def get_window_props(cls):
+		propspad = cls.get_props_path()
+		props = Pickles.read(propspad)
+		try:
+			return props['window_props']
+		except:
+			props['window_props'] = list()
+			Pickles.write(propspad, props)
+			return list()
+
+	@classmethod
+	def set_window_props(cls, window_props):
+		propspad = cls.get_props_path()
+		Pickles.write(propspad, window_props)
+
+class BaseClass:
+	@classmethod
+	def get_model(cls) -> dict:
+		return dict()
+
+	@classmethod
+	def get_empty(cls) -> dict:
+		m = cls.get_model()
+		newm = dict()
+		for key, val in m.items():
+			newm[key] = val['default']
+		return newm
+
 
 # General function for type casting
 class Casting:
 	@classmethod
-	def name_safe(cls, s: str, nums) -> str:
+	def name_safe(cls, s: str, nums: bool) -> str:
 		# removes all none-word chars
 		parts = s.replace('-', ' ').split(' ')
 		nieuw = []
 		for p in parts:
 			if nums:
-				p = re.sub(r'[^a-zA-Z0-9]', '', p, count=1000).lower()
+				p = re.sub(r'[^a-zA-Z0-9_]', '', p, count=1000).lower()
 			else:
-				p = re.sub(r'[^a-zA-Z]', '', p, count=1000).lower()
+				p = re.sub(r'[^a-zA-Z_]', '', p, count=1000).lower()
 			if p != '':
 				nieuw.append(p)
 		return '-'.join(nieuw)
@@ -174,9 +275,11 @@ class Timetools:
 			return Timetools.td_2_ts(cls.BIRTH)
 
 	@classmethod
-	def ts_2_td(cls, timest: int, rev=False, withtime=False) -> str:
+	def ts_2_td(cls, timest: int, rev=False, withtime=False, local=False) -> str:
 		# convert seconds to datestring yyyy-mm-dd
-		if withtime:
+		if local:
+			dstr = cls.DATETIME_LOCAL
+		elif withtime:
 			if rev:
 				dstr = cls.DATETIMESTRING
 			else:
@@ -410,9 +513,9 @@ class JINJAstuff:
 		pass
 
 	# ------------- jinja functions only ----------------
-	def _oid(self):
+	def _id(self):
 		try:
-			return str(self.record['_id'])
+			return self.record['id']
 		except:
 			return ''
 

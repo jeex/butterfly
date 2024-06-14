@@ -7,7 +7,7 @@ table{
     border-collapse: collapse;
 }
 tr{
-    border-bottom: 1px solid #f1f1f1;
+    border: 2px solid white;
 }
 th{
     font-family: "Roboto Mono", monospace;
@@ -24,7 +24,7 @@ td{
     font-weight: 300;
     padding: 0.25em 0.5em;
     background-color: white;
-    border-radius: 3px;
+    border-radius: 0;
 }
 .smal{
     max-width: 2em;
@@ -46,23 +46,31 @@ td{
 }
 .single-form label{
     display: inline-block;
-    width: 8.5em;
+    width: 10em;
     text-align: right;
     margin-right: 0.5em;
     padding: 0.25em 0.5em;
     border-radius: 3px;
 }
+.single-form label .kopieknop{
+    float: left;
+}
 .single-form input[type=text],
 .single-form input[type=email],
 .single-form input[type=number],
-.single-form input[type=datetime-local],
-.single-form input[type=color]
+.single-form input[type=datetime-local]
 {
-    border: 1px solid #ddd;
+    border: none;
     background-color: #ddd;
     padding: 0.25em 0.5em;
     border-radius: 3px;
-    width: 220px;
+}
+
+.view-info{
+    display: inline-block;
+    width: 200px;
+    border-radius: 3px;
+    padding: 0.25em 0.5em;
 }
 input[type=submit]{
     border: 1px solid #ddd;
@@ -91,75 +99,42 @@ span.radio{
 }
 
 select{
-    border: 1px solid #eee;
-    background-color: #ddd;
+    border: 1px solid #ddd;
+    background-color: #eee;
     padding: 0.25em 0.5em;
     border-radius: 3px;
     width: 234px;
 }
-select:disabled{
-    background-color: #eee;
-}
-input:disabled,
-input:read-only{
-    background-color: #eee;
-}
-
 .single-form p{
     margin: 0.5em 0;
 }
-.note{
-    margin: 0.5em 0 1em 0;
-    border: 1px solid #eee;
-    border-radius: 3px;
-    padding: 0.5em;
-}
-.note p,
-.note div{
-    font-size: 0.9em;
-    line-height: 1.8em;
-}
-.note div{
-    margin: 0.5em -0.6em -0.6em -0.6em;
-    padding: 0.5em;
-    background-color: #eee;
-    border-radius: 0 0 3px 3px;
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-content: center;
-}
-.note div *{
-    font-size: inherit;
-    font-weight: 600;
-}
 
-.placeholder{
-    font-weight: 600;
-    background-color: #eee;
-    border-radius: 3px;
-    padding: 0.25em 0.5em;
-    cursor: pointer;
-    margin-left: 0.25em;
-}
-.grote-komma{
-    font-size: 2em;
-    font-weight: 600;
-}
 h2{
-    margin: 1em 0 0 0.5em;
+    margin: 2em 0 0.5em 0.5em;
     font-size: 1em;
     font-weight: 600;
+    margin-left: 0;
 }
-.circular{
-    width: 0.5em;
-    font-size: 0.6em;
+h2:first-of-type{
+    margin-top: 1em;
 }
-#csv-area{
-    font-family: "Roboto Mono", monospace;
-    font-size: 0.7em;
-    white-space: pre;
-    overflow-wrap: normal;
-    overflow-x: scroll;
+h2:not(:first-of-type){
+    border-top: 1px solid var(--menu);
+    padding-top: 0.5em;
+}
+
+.links{
+    margin-bottom: 0.5em;
+}
+
+.single-links-rechts{
+    float: right;
+    margin-right: 22px;
+}
+
+.minfield{
+    background-color: var(--menu);
+}
+.fixedfield{
+    background-color: #eee;
 }

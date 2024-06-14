@@ -1,5 +1,6 @@
 
 let calc_contra_color = function(kleur){
+    if(kleur)
     // Variables for red, green, blue values
     var r, g, b, hsp;
     // Check the format of the color, HEX or RGB?
@@ -32,3 +33,4 @@ let calc_contra_color = function(kleur){
         return 'white';
     }
 }
+

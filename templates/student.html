@@ -1,0 +1,491 @@
+{% include '_head.html' %}
+<link rel="stylesheet" href="/static/studenten.css" />
+
+</head>
+<body>
+    {% include '_menu.html' %}
+    </header>
+    <main>
+        <div class="links" style="text-align: center; border-bottom: 1px solid var(--menu); padding-bottom: 0.5em;">
+            {% if student._try('s_group') > 1 and props.magda(['docent', 'beheer'])%}
+                <a  style="background-color: {{ student._s_item('s_group')['color'] }}" class="asbutton" href="/groepen/{{ student._try('s_group') }}">naar {{ student._s_item('s_group')['name'] }}</a>
+            {% endif %}
+            <a class="asbutton" href="/studenten/{{ student._try('filter') }}">naar {{ student._try('filter') }}</a>
+            {% if props.magda(['administratie', 'beheer']) %}
+                <a style="background-color: var(--menu); color: black;" class="asbutton" href="/studenten/new">nieuwe student</a>
+                <a style="background-color: dodgerblue; color: white;" class="asbutton" href="/studenten/import">import lijst Joke</a>
+            {% endif %}
+        </div>
+
+        <div class="two-columns">
+            <div>
+            {% if nieuw %}
+                <form class="single-form" action="/studenten/new/{{ student._id() }}" method="post">
+            {% else %}
+                <form class="single-form" action="/studenten/single/{{ student._id() }}" method="post" enctype=multipart/form-data>
+            {% endif %}
+                    <p>
+                        <label>ID</label>
+                        {{ student._id() }}
+                        {% if studmappad is not none and not nieuw %}
+                            <a class="single-links-rechts asbutton" href="/studenten/opendir/{{ student._id() }}">open map</a>
+                        {% endif %}
+                    </p>
+                    <p>
+                        <label>Aanmaak</label>
+                        {{ student._try('created_ts')|datetime }}
+                    </p>
+                    {% if not nieuw %}
+                        {% if props.magda(['beheer', 'docent']) %}{% set readonly = '' %}{% else %}{% set readonly = 'disabled' %}{% endif %}
+                        {% set item = student._s_item('s_group') %}
+                        <p>
+                            {% set sysl = sysls['s_group'] %}
+                            <label style="background-color: {{ item['color'] }}">Groep</label>
+                            <select {{ readonly }} name="s_group">
+                                <option value="0"> </option>
+                                {% for s in sysl %}
+                                    {% if s == student._try('s_group') %}
+                                        {% set sel = 'selected' %}
+                                    {% else %}
+                                        {% set sel = '' %}
+                                    {% endif %}
+                                    <!-- als s != 0 OF als sel='selected' OF sysl[s]['status'] == 1 -->
+                                    {% if student._try('s_group') != 0 or sel == 'selected' or sysl[s]['status'] == 1 %}
+                                        <option {{ sel }} value="{{ s }}">{{ sysl[s]['name'] }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </p>
+                    {% endif %}
+
+                    {% if props.magda(['beheer', 'administratie']) %}{% set readonly = '' %}{% else %}{% set readonly = 'disabled' %}{% endif %}
+                    <p>
+                        <label>Voornaam</label>
+                        <input {{ readonly }} name="firstname" type="text" value="{{ student._try('firstname') }}">
+                    </p>
+                    <p>
+                        <label>Achternaam</label>
+                        <input {{ readonly }} name="lastname" type="text" value="{{ student._try('lastname') }}">
+                    </p>
+                    <p>
+                        <label>Email</label>
+                        <input {{ readonly }} name="email" type="email" value="{{ student._try('email') }}">
+                    </p>
+
+                    {% if not nieuw %}
+                        {% set item = student._s_item('s_gender') %}
+                        <p>
+                            {% set sysl = sysls['s_gender'] %}
+                            <label style="background-color: {{ item['color'] }}">mvo</label>
+                            <span class="radiospan">
+                                {% for s in sysl %}
+                                    {% if s == student._try('s_gender') %}
+                                        {% set sel = 'checked' %}
+                                    {% else %}
+                                        {% set sel = '' %}
+                                    {% endif %}
+                                    {% if sel == 'checked' or sysl[s]['status'] == 1 %}
+                                        <span class="radio"><input type="radio" name="s_gender" {{ sel }} value="{{ s }}">&nbsp;{{ sysl[s]['name'] }}</span>
+                                    {% endif %}
+                                {% endfor %}
+                            </span>
+                        </p>
+
+                        {% if props.magda(['docent', 'beheer']) %}
+                            <p>
+                                {% if student._try('pf_url') != '' %}
+                                    <label>Portfolio <a target="_blank" class="asbutton" href="{{ student._try('pf_url') }}">&rarr;</a></label>
+                                {% else %}
+                                    <label>Portfolio</label>
+                                {% endif %}
+                                <input name="pf_url" type="text" value="{{ student._try('pf_url') }}">
+                            </p>
+                            <p>
+                                <label>Wachtwoord</label>
+                                <input name="password" type="text" value="{{ student._try('password') }}">
+                            </p>
+                        {% endif %}
+                        {% if props.magda(['beheer', 'docent']) %}{% set readonly = '' %}{% else %}{% set readonly = 'disabled' %}{% endif %}
+                        <p>
+                            <label>Cijfer</label>
+                            <input {{ readonly }} name="grade" min="0" max="100" step="10" type="number" value="{{ student._try('grade') }}">
+                        </p>
+                        <p>
+                            <label>Cijferdatum</label>
+                            {% if student._try('grade_ts') > 0 %}
+                                {{ student._try('grade_ts')|date }}
+                                <a class="single-links-rechts asbutton" id="grade-mail" href="#">Verstuur email</a>
+                            {% endif %}
+                        </p>
+                    {% endif %}
+
+                    {% set item = student._s_item('s_status') %}
+                    <p>
+                        {% if props.magda(['beheer']) %}{% set readonly = '' %}{% else %}{% set readonly = 'disabled' %}{% endif %}
+                        {% set sysl = sysls['s_status'] %}
+                        <label style="background-color: {{ item['color'] }}">Status</label>
+                        <select {{ readonly }} name="s_status">
+                            <option value="0"> </option>
+                            {% for s in sysl %}
+                                {% if s == student._try('s_status') %}
+                                    {% set sel = 'selected' %}
+                                {% else %}
+                                    {% set sel = '' %}
+                                {% endif %}
+                                {% if student._try('s_status') != 0 or sel == 'selected' or sysl[s]['status'] == 1 %}
+                                    <option {{ sel }} value="{{ s }}">{{ sysl[s]['name'] }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </p>
+
+                    {% if not nieuw and student._try('s_status') == 10 and props.magda(['beheer']) %}
+                        <p>
+                            <label>Uitnodigen</label>
+                            <a id="invite-mail " class="asbutton" href="#">stuur bevestiging</a>
+                        </p>
+                    {% endif %}
+
+                    {% set item = student._s_item('s_origin') %}
+                    <p>
+                        {% if props.magda(['beheer', 'administratie']) %}{% set readonly = '' %}{% else %}{% set readonly = 'disabled' %}{% endif %}
+                        {% set sysl = sysls['s_origin'] %}
+                        <label style="background-color: {{ item['color'] }}">Herkomst</label>
+                        {% if student._try('s_year')|int < 2024 %}
+                                <select {{ readonly }} name="s_origin">
+                                <option value="0"> </option>
+                                {% for s in sysl %}
+                                    {% if s == student._try('s_origin') %}
+                                        {% set sel = 'selected' %}
+                                    {% else %}
+                                        {% set sel = '' %}
+                                    {% endif %}
+                                    {% if student._try('s_origin') != 0 or sel == 'selected' or sysl[s]['status'] == 1 %}
+                                        <option {{ sel }} value="{{ s }}">{{ sysl[s]['name'] }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                            {% else %}
+                                <span class="radiospan fill">
+                                    {% for s in sysl %}
+                                        {% if s == student._try('s_origin') %}
+                                            {% set sel = 'checked' %}
+                                        {% else %}
+                                            {% set sel = '' %}
+                                        {% endif %}
+                                        {% if sel == 'checked' or sysl[s]['status'] == 1 %}
+                                            <span class="radio"><input type="radio" name="s_origin" {{ sel }} value="{{ s }}">&nbsp;{{ sysl[s]['name'] }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                    </p>
+
+                    {% if not nieuw %}
+                        {% if props.magda(['beheer', 'administratie']) %}{% set readonly = '' %}{% else %}{% set readonly = 'disabled' %}{% endif %}
+                        {% set item = student._s_item('s_uni') %}
+                        <p>
+                            {% set sysl = sysls['s_uni'] %}
+                            <label style="background-color: {{ item['color'] }}">Uni</label>
+                            <select {{ readonly }} name="s_uni">
+                                <option value="0"> </option>
+                                {% for s in sysl %}
+                                    {% if s == student._try('s_uni') %}
+                                        {% set sel = 'selected' %}
+                                    {% else %}
+                                        {% set sel = '' %}
+                                    {% endif %}
+                                    {% if student._try('s_uni') != 0 or sel == 'selected' or sysl[s]['status'] == 1 %}
+                                        <option {{ sel }} value="{{ s }}">{{ sysl[s]['name'] }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </p>
+
+                        {% set item = student._s_item('s_program') %}
+                        <p>
+                            {% set sysl = sysls['s_program'] %}
+                            <label style="background-color: {{ item['color'] }}">Opleiding</label>
+                            <select name="s_program">
+                                <option value="0"> </option>
+                                {% for s in sysl %}
+                                    {% if s == student._try('s_program') %}
+                                        {% set sel = 'selected' %}
+                                    {% else %}
+                                        {% set sel = '' %}
+                                    {% endif %}
+                                    {% if student._try('s_program') != 0 or sel == 'selected' or sysl[s]['status'] == 1 %}
+                                        <option {{ sel }} value="{{ s }}">{{ sysl[s]['name'] }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </p>
+
+                        {% set item = student._s_item('s_year') %}
+                        <p>
+                            {% if props.magda(['beheer', 'administratie']) %}{% set readonly = '' %}{% else %}{% set readonly = 'disabled' %}{% endif %}
+                            {% set sysl = sysls['s_year'] %}
+                            <label style="background-color: {{ item['color'] }}">Jaar</label>
+                            <select {{ readonly }} name="s_year">
+                                <option value="0"> </option>
+                                {% for s in sysl %}
+                                    {% if s == student._try('s_year') %}
+                                        {% set sel = 'selected' %}
+                                    {% else %}
+                                        {% set sel = '' %}
+                                    {% endif %}
+                                    {% if student._try('s_year') != 0 or sel == 'selected' or sysl[s]['status'] == 1 %}
+                                        <option {{ sel }} value="{{ s }}">{{ sysl[s]['name'] }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </p>
+
+                        {% set item = student._s_item('s_term') %}
+                        <p>
+                            {% if props.magda(['beheer', 'administratie']) %}{% set readonly = '' %}{% else %}{% set readonly = 'disabled' %}{% endif %}
+                            {% set sysl = sysls['s_term'] %}
+                            <label style="background-color: {{ item['color'] }}">Periode/Semester</label>
+                            <select {{ readonly }} name="s_term">
+                                <option value="0"> </option>
+                                {% for s in sysl %}
+                                    {% if s == student._try('s_term') %}
+                                        {% set sel = 'selected' %}
+                                    {% else %}
+                                        {% set sel = '' %}
+                                    {% endif %}
+                                    {% if student._try('s_term') != 0 or sel == 'selected' or sysl[s]['status'] == 1 %}
+                                        <option {{ sel }} value="{{ s }}">{{ sysl[s]['name'] }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </p>
+
+                        {% set item = student._s_item('s_course') %}
+                        <p>
+                            {% if props.magda(['beheer', 'administratie']) %}{% set readonly = '' %}{% else %}{% set readonly = 'disabled' %}{% endif %}
+                            {% set sysl = sysls['s_course'] %}
+                            <label style="background-color: {{ item['color'] }}">Minor</label>
+                            {% if student._try('s_year')|int < 2024 %}
+                                <select {{ readonly }} name="s_course">
+                                <option value="0"> </option>
+                                {% for s in sysl %}
+                                    {% if s == student._try('s_course') %}
+                                        {% set sel = 'selected' %}
+                                    {% else %}
+                                        {% set sel = '' %}
+                                    {% endif %}
+                                    {% if student._try('s_course') != 0 or sel == 'selected' or sysl[s]['status'] == 1 %}
+                                        <option {{ sel }} value="{{ s }}">{{ sysl[s]['name'] }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                            {% else %}
+                                <span class="radiospan fill">
+                                    {% for s in sysl %}
+                                        {% if s == student._try('s_course') %}
+                                            {% set sel = 'checked' %}
+                                        {% else %}
+                                            {% set sel = '' %}
+                                        {% endif %}
+                                        {% if sel == 'checked' or sysl[s]['status'] == 1 %}
+                                            <span class="radio"><input type="radio" name="s_course" {{ sel }} value="{{ s }}">&nbsp;{{ sysl[s]['name'] }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </span>
+                            {% endif %}
+                        </p>
+
+                        {% set item = student._s_item('s_lang') %}
+                        <p>
+                            {% if props.magda(['beheer', 'administratie']) %}{% set readonly = '' %}{% else %}{% set readonly = 'disabled' %}{% endif %}
+                            {% set sysl = sysls['s_lang'] %}
+                            <label style="background-color: {{ item['color'] }}">Taal</label>
+                            <span class="radiospan">
+                                {% for s in sysl %}
+                                    {% if s == student._try('s_lang') %}
+                                        {% set sel = 'checked' %}
+                                    {% else %}
+                                        {% set sel = '' %}
+                                    {% endif %}
+                                    {% if sel == 'checked' or sysl[s]['status'] == 1 %}
+                                        <span class="radio"><input {{ readonly }} type="radio" name="s_lang" {{ sel }} value="{{ s }}">&nbsp;{{ sysl[s]['name'] }}</span>
+                                    {% endif %}
+                                {% endfor %}
+                            </span>
+                        </p>
+
+                        {% if student._try('s_course') == 3 %}
+                            {% if props.magda(['beheer', 'docent']) %}{% set readonly = '' %}{% else %}{% set readonly = 'disabled' %}{% endif %}
+                            {% set item = student._s_item('s_stream') %}
+                            <p>
+                                {% set sysl = sysls['s_stream'] %}
+                                <label style="background-color: {{ item['color'] }}">Stroom</label>
+                                <span class="radiospan fill">
+                                    {% for s in sysl %}
+                                        {% if s == student._try('s_stream') %}
+                                            {% set sel = 'checked' %}
+                                        {% else %}
+                                            {% set sel = '' %}
+                                        {% endif %}
+                                        {% if sel == 'checked' or sysl[s]['status'] == 1 %}
+                                            <span class="radio"><input {{ readonly }} type="radio" name="s_stream" {{ sel }} value="{{ s }}">&nbsp;{{ sysl[s]['name'] }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </span>
+                            </p>
+                        {% endif %}
+
+                        {% if false %}
+                            {% set item = student._s_item('s_ec') %}
+                            <p>
+                                {% set sysl = sysls['s_ec'] %}
+                                <label style="background-color: {{ item['color'] }}">EC's</label>
+                                <span class="radiospan">
+                                    {% for s in sysl %}
+                                        {% if s == student._try('s_ec') %}
+                                            {% set sel = 'checked' %}
+                                        {% else %}
+                                            {% set sel = '' %}
+                                        {% endif %}
+                                        {% if sel == 'checked' or sysl[s]['status'] == 1 %}
+                                            <span class="radio"><input type="radio" name="s_ec" {{ sel }} value="{{ s }}">&nbsp;{{ sysl[s]['name'] }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </span>
+                            </p>
+                        {% endif %}
+
+                        {% if props.magda(['beheer', 'administratie']) %}{% set readonly = '' %}{% else %}{% set readonly = 'disabled' %}{% endif %}
+                        <p>
+                            <label>KoM code</label>
+                            <input {{ readonly }} name="kom_code" type="text" value="{{ student._try('kom_code') }}">
+                        </p>
+                        <p>
+                            <label>NHLS code</label>
+                            <input {{ readonly }} name="nhls_code" type="text" value="{{ student._try('nhls_code') }}">
+                        </p>
+                    {% endif %}
+
+                    <p>
+                        <input class="single-links-rechts" type="submit" name="save" value="Opslaan">
+                        {% if not nieuw and props.magda(['beheer']) %}
+                            <input class="valop" style="margin-left: 35px;" type="submit" name="delete" value="Verwijderen">
+                        {% else %}
+
+                        {% endif %}
+                    </p>
+                </form>
+            </div>
+
+            {% if props.magda(['docent', 'beheer']) %}
+                <div>
+                    {% if not nieuw %}
+                        <form style="display: block; width: 100%;" class="note" action="/studenten/note/{{ student._id() }}" method="post">
+                            <p><textarea style="width: 99%; height: 5em;" name="note"></textarea></p>
+                            <p style="display: flex; flex-wrap: wrap; flex-direction: row; justify-content: space-between;">
+                                <input type="submit" name="new" value="Opslaan">
+                            </p>
+                        </form>
+
+                        {% for note in student._try('notes') %}
+                            <div class="note">
+                                <p>{{ note['note'] }}</p>
+                                <div class="{{ 'valop' if note['done'] == 0 }}">
+                                    <span>{{ note['alias'] }}</span>
+                                    <span>{{ note['created_ts']|datetime }}</span>
+                                    <form method="post" action="/studenten/note/{{ student._id()|int }}/{{ note['created_ts']|int }}">
+                                        <input style="background-color: white;" type="submit" name="delete" value="delete">
+                                        Todo <input
+                                                class="todo-checkbox"
+                                                {{ 'checked'|safe if note['done'] == 0 }}
+                                                data-id="{{ student._id() }}"
+                                                data-note="{{ note['created_ts'] }}"
+                                                type="checkbox" name="done"
+                                                value="1"
+                                        >
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            {% else %}
+                <div>&nbsp;</div>
+                <!-- geen notities voor admininstratie -->
+            {% endif %}
+        </div>
+    </main>
+<script>
+let controle_single_submit = function(e){
+    let em = $('form.single-form input[name="email"]');
+    let fn = $('form.single-form input[name="firstname"]');
+    let ln = $('form.single-form input[name="lastname"]');
+    if( $(em).val().trim() === ''){
+        e.preventDefault();
+        $(em).addClass('valop');
+    }
+    if( $(fn).val().trim() === ''){
+        e.preventDefault();
+        $(fn).addClass('valop');
+    }
+    if( $(ln).val().trim() === ''){
+        e.preventDefault();
+        $(ln).addClass('valop');
+    }
+}
+
+let controle_note_submit = function(e){
+    let em = $('form.note textarea');
+    if( $(em).val().trim() === ''){
+        e.preventDefault();
+        $(em).addClass('valop');
+    }else{
+    }
+}
+{% if student._try('s_status') == 10 and not nieuw %}
+    let invite_mail = function(){
+        b = "{{ invite['text']|safe }}";
+        b = b.replaceAll('<br>', "\n");
+        e = "{{ student._try('email')|safe }}";
+        s = "{{ invite['subject']|safe }}";
+        document.location = "mailto:" + e + "?subject=" + s + "&body=" + encodeURIComponent(b);
+        $('select[name="s_status"] option[value="11"]').prop('selected', true);
+        $('form.single-form input[name="save"]').trigger('click');
+    }
+{% endif %}
+
+{% if student._try('grade_ts') > 0 %}
+    let grade_mail = function(){
+        b = "{{ grade['text']|safe }}";
+        b = b.replaceAll('<br>', "\n");
+        e = "{{ student._try('email')|safe }}";
+        s = "{{ grade['subject']|safe }}";
+        document.location = "mailto:" + e + "?subject=" + s + "&body=" + encodeURIComponent(b);
+        $('select[name="s_status"] option[value="11"]').prop('selected', true);
+        $('form.single-form input[name="save"]').trigger('click');
+    }
+{% endif %}
+
+$(function(){
+    $('.todo-checkbox').on('click', function(){
+        $(this).closest('form').submit();
+    });
+    $('form.single-form').on('submit', function(e){
+        controle_single_submit(e)
+    });
+    $('form.note').on('submit', function(e){
+        controle_note_submit(e)
+    });
+    $('#invite-mail').on('click', function(e){
+        e.preventDefault();
+        invite_mail();
+    });
+    $('#grade-mail').on('click', function(e){
+        e.preventDefault();
+        grade_mail();
+    });
+});
+
+</script>
+</body>

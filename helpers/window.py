@@ -1,8 +1,9 @@
 import webview
 import webview.menu as wm
 import sys
+from flask import current_app
 
-from helpers.globalclasses import Props
+from helpers.general import Mainroad
 
 class Window:
 	_venster = None
@@ -10,11 +11,10 @@ class Window:
 	_title = 'CPNITS Butterfly'
 
 	def __init__(self, app):
-		wprops = Props.get_prop('window_props', default=None)
+		wprops = Mainroad.get_window_props()
 		if isinstance(wprops, list):
 			if len(wprops) == 6:
 				self._wprops = wprops
-
 		self.app = app
 
 		self.venster = webview.create_window(
@@ -97,6 +97,8 @@ class Window:
 			self.venster.maximized,
 			self.venster.minimized
 		]
-		Props.set_prop('window_props', self._wprops)
+		Mainroad.set_window_props(self._wprops)
+
+		self.venster.title = f'{self._title}'
 
 

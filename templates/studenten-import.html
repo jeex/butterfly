@@ -1,0 +1,196 @@
+{% include '_head.html' %}
+<link rel="stylesheet" href="/static/studenten.css" />
+
+</head>
+<body>
+    {% include '_menu.html' %}
+    </header>
+    <main>
+        {% if rows is not none %}
+            <div class="links" style="text-align: center; border-bottom: 1px solid var(--menu); padding-bottom: 0.5em;">
+                <table style=" margin-left: auto; margin-right: auto;">
+                    <thead>
+                        <tr>
+                            <th>Voornaam</th>
+                            <th>Achternaam</th>
+                            <th>Email</th>
+                            <th>NHLS-nr</th>
+                            <th>Status</th>
+                            <th>Herkomst</th>
+                            <th>Jaar</th>
+                            <th>Periode</th>
+                            <th>Cursus</th>
+                            <th>Uni</th>
+                            <th>Programma</th>
+                            <th>Ec</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in rows %}
+                            {% set id = s._id() %}
+                            <tr>
+                                <td>{{ s._try('firstname') }}</td>
+                                <td>{{ s._try('lastname') }}</td>
+                                <td class="check-email">{{ s._try('email') }}</td>
+                                <td>{{ s._try('nhls_code') }}</td>
+                                {% set item = s._s_item('s_status') %}
+                                <td style="background-color: {{ item['color'] }};">{{ item['name']|nbsp|safe }}</td>
+                                {% set item = s._s_item('s_origin') %}
+                                <td style="background-color: {{ item['color'] }};">{{ item['name']|nbsp|safe }}</td>
+                                {% set item = s._s_item('s_year') %}
+                                <td style="background-color: {{ item['color'] }};">{{ item['name']|nbsp|safe }}</td>
+                                {% set item = s._s_item('s_term') %}
+                                <td style="background-color: {{ item['color'] }};">{{ item['name']|nbsp|safe }}</td>
+                                {% set item = s._s_item('s_course') %}
+                                <td style="background-color: {{ item['color'] }};">{{ item['name']|nbsp|safe }}</td>
+                                {% set item = s._s_item('s_uni') %}
+                                <td style="background-color: {{ item['color'] }};">{{ item['name']|nbsp|safe }}</td>
+                                {% set item = s._s_item('s_program') %}
+                                <td style="background-color: {{ item['color'] }};">{{ item['name']|nbsp|safe }}</td>
+                                {% set item = s._s_item('s_ec') %}
+                                <td style="background-color: {{ item['color'] }};">{{ item['name']|nbsp|safe }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+        <form class="two-columns" method="post" action="/studenten/import">
+            <div class="single-form">
+                <h2>Deze moeten een waarde hebben</h2>
+                <p>
+                    <label>Status</label>
+                    <input type="hidden" name="s_status" value="{{ preset['s_status'] }}">listed
+                </p>
+                <p>
+                    {% set sysl = sysls['s_origin'] %}
+                    <label>Herkomst</label>
+                    <select name="s_origin">
+                        {% for s in sysl %}
+                            {% if sysl[s]['status'] == 1 %}
+                                <option {{ 'selected'|safe if s == preset['s_origin'] }} value="{{ s }}">{{ sysl[s]['name'] }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </p>
+                <p>
+                    {% set sysl = sysls['s_year'] %}
+                    <label>Jaar</label>
+                    <select name="s_year">
+                        {% for s in sysl %}
+                            {% if sysl[s]['status'] == 1 %}
+                                <option {{ 'selected'|safe if s == preset['s_year'] }} value="{{ s }}">{{ sysl[s]['name'] }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </p>
+                <p>
+                    {% set sysl = sysls['s_term'] %}
+                    <label>Periode</label>
+                    <select name="s_term">
+                        {% for s in sysl %}
+                            {% if sysl[s]['status'] == 1 %}
+                                <option {{ 'selected'|safe if s == preset['s_term'] }} value="{{ s }}">{{ sysl[s]['name'] }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </p>
+                <p>
+                    {% set sysl = sysls['s_course'] %}
+                    <label>Cursus</label>
+                    <select name="s_course">
+                        {% for s in sysl %}
+                            {% if sysl[s]['status'] == 1 %}
+                                <option {{ 'selected'|safe if s == preset['s_course'] }} value="{{ s }}">{{ sysl[s]['name'] }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </p>
+
+                <hr style="width: 380px;">
+                <h2>Optioneel</h2>
+                <p>
+                    {% set sysl = sysls['s_uni'] %}
+                    <label>Uni</label>
+                    <select name="s_uni">
+                        <option value="0"></option>
+                        {% for s in sysl %}
+                            {% if sysl[s]['status'] == 1 %}
+                                <option {{ 'selected'|safe if s == preset['s_uni'] }} value="{{ s }}">{{ sysl[s]['name'] }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </p>
+                <p>
+                    {% set sysl = sysls['s_program'] %}
+                    <label>Programma</label>
+                    <select name="s_program">
+                        <option value="0"></option>
+                        {% for s in sysl %}
+                            {% if sysl[s]['status'] == 1 %}
+                                <option {{ 'selected'|safe if s == preset['s_program'] }} value="{{ s }}">{{ sysl[s]['name'] }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </p>
+            </div>
+            <div>
+                <p class="placeholders" style="margin-top: 1em;">
+                    {% for v in preset['volgorde'] %}
+                        <span class="placeholder">{{ v }}</span>
+                    {% endfor %}
+                </p>
+                <p style="margin-top: 0.5em;">
+                    <textarea name="csv" style="width: 100%; display: block;" rows="10">{{ preset['csv'] }}</textarea>
+                </p>
+                <p style="margin-top: 1em;">
+                    <input type="hidden" name="placeholders" value="">
+                    <select name="sep">
+                        {% for sep in seps %}
+                            <option {{ 'selected'|safe if sep == preset['sep'] }} value="{{ sep }}">{{ sep }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="submit" name="try" value="Converteer">
+                    {% if rows is not none %}
+                        <input class="valop" type="submit" name="import" value="Importeer">
+                    {% endif %}
+                </p>
+            </div>
+        </form>
+    </main>
+<script>
+    let set_volgorde = function(){
+        var lijst = [];
+        $.each($('.placeholders span'), function(){
+            let n = $(this).html().trim();
+            lijst.push(n)
+        })
+        $('input[name="placeholders"]').val(lijst)
+    }
+
+    let validateEmail = function(email){
+        var re = /\S+@\S+\.\S+/;
+        return re.test(email);
+    }
+
+    $(function(){
+        // sorteer placeholders
+        $('.placeholder').on('click', function(){
+            let eerste = $('.placeholders').find('span:first-of-type');
+            $(this).insertBefore(eerste);
+        });
+
+        // ajax form
+        $('form.two-columns').on('submit', function(e){
+            set_volgorde();
+        });
+
+        $.each($('.check-email'), function(){
+            let em = $(this);
+            if(!validateEmail(em.html())){
+                em.addClass('valop');
+            }
+        });
+    })
+</script>
+</body>

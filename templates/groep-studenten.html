@@ -1,0 +1,189 @@
+{% include '_head.html' %}
+<link rel="stylesheet" href="/static/studenten.css" />
+</head>
+<body>
+    {% include '_menu.html' %}
+        <menu class="submenu">
+            <ul>
+                {% for thing in groepen %}
+                    {% if thing['status'] == 1 and thing['id'] in mijngroepen %}
+                        <li class="contrast" style="border: 1px solid white; background-color: {{ thing['color'] }}"><a href="/groepen/{{ thing['id'] }}">{{ thing['name'] }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if mijngroepen|length > 0 and mijngroepen|length < groepen|length %}
+                    <li style="width: 2px; height: 2.5em; padding: 0; background-color: black; margin-right: 0.1em;"></li>
+                {% endif %}
+
+                {% for thing in groepen %}
+                    {% if thing['status'] == 1 and thing['id'] not in mijngroepen %}
+                        <li class="contrast" style="border: 1px solid white; background-color: {{ thing['color'] }}"><a href="/groepen/{{ thing['id'] }}">{{ thing['name'] }}</a></li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </menu>
+    </header>
+    <main>
+        <div class="contrast" style="text-align: center; background-color: {{ groep['color'] }};padding: 0.5em; margin-bottom: 0.5em;">
+             Groep: {{ groep['name'] }} [{{ students|length }}]
+            {% for a, aa in avs.items() %}
+                <a href="/groepen/{{ groep['id'] }}/{{ a }}" class="asbutton contrast" style="background-color: {{ aa['color'] }}">{{ a }}</a>
+            {% endfor %}
+            <a href="/groepen/{{ groep['id'] }}/FULL" class="asbutton contrast" style="background-color: black">alles</a>
+        </div>
+
+        <form id="no-ajax" style="display: none;" method="post" action="/groepen/{{ groep['id'] }}/{{ viewname }}">
+            <input form="no-ajax" name="student-id" value="" type="hidden">
+            <input form="no-ajax" name="field-name" value="" type="hidden">
+            <input form="no-ajax" name="field-value" value="" type="hidden">
+            <input form="no-ajax" name="what" value="" type="hidden">
+        </form>
+
+        {% set smalfields = ['id', 's_gender', 'todo', 'pf_url', 'grade', 's_ec', 's_lang'] %}
+        <div class="links">
+            <table class="rotate-headers">
+                <thead>
+                    <tr>
+                        <th style="background-color: {{ view['color'] }};" class="contrast no-sort"><input type="checkbox" name="add" value="all"></th>
+                        <th style="background-color: {{ view['color'] }};" class="contrast"><span></span>id</th>
+                        {% for f in view['fields'] %}
+                            {% if f in ['id', 'notes', 'circulars', 'todo'] %}
+
+                            {% else %}
+                                <th style="background-color: {{ view['color'] }};" class="contrast {{ 'smal' if f in smalfields }} {{ 'circular' if f not in afns }} {{ 'no-sort' if f not in afns or f in ['grade'] }}" id="{{ f }}"><span></span>{{ view['nicenames'][f] }}</th>
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                {% for s in students %}
+                    {% set id = s._id() %}
+                    <tr id="{{ id }}" data-status="{{ s._try('s_status') }}" data-filter="{{ s._try('filter') }}">
+                        <td style="background-color: {{ view['color'] }}; border-radius: 0;" ><input type="checkbox" name="add" value="{{ id }}"></td>
+                        <td data-csv="{{ id }}" ><a class="asbutton {{ 'valop' if s._try('todo') == 1 }}" href="/studenten/single/{{ id }}">{{ id|vier }}</a></td>
+                        {% for f in view['fields'] %}
+                            {% if f in ['id', 'notes', 'circulars', 'todo'] %}
+
+                            {% elif f == 'pf_url' %}
+                                <td class="dblignore" data-csv="{{ s._try('pf_url') }}" data-th="pf_url">
+                                    <input type="url" name="pf_url" value="{{ s._try('pf_url') }}" style="width: 5em; font-size: 1em; padding: 0.1em;">
+                                    {% if s._try('pf_url') != '' %}<a class="asbutton" href="{{ s._try('pf_url') }}" target="_blank">&rarr;</a>{% else %}&nbsp;{% endif %}
+                                </td>
+
+                            {% elif f == 'grade' %}
+                                <td class="dblignore" data-csv="{{ s._try('grade') }}" data-th="grade">
+                                    <input type="number" step="10" min="0" max="10" name="grade" value="{{ s._try('grade') }}" style="width: 5em; font-size: 1em; padding: 0.1em;">
+                                </td>
+
+                            {% elif f in ['grade_ts', 'created_ts'] %}
+                                <td data-csv="{{ s._try(f)|date }}" data-th="{{ f }}">{{ s._try(f)|date }}</td>
+
+                            {% elif f not in afns %}
+                                <td style="cursor:pointer; background-color: {{ s._circular(viewname, f)|circ }}; border-radius: 0; border:1px solid white;" data-cirname="{{ f }}" data-cirval="{{ s._circular(viewname, f) }}" class="contrast circular dblignore"></td>
+
+                            {% elif f.startswith('s_') %}
+                                {% set item = s._s_item(f) %}
+                                <td data-csv="{{ item['name']|nbsp|safe }}" class="{{ 'smal' if f in smalfields }}" data-th="{{ f }}" data-idnr="{{ item['id'] }}" style="background-color: {{ item['color'] }};">{{ item['name']|nbsp|safe }}</td>
+
+                            {% else %}
+                                <td class="{{ 'dblignore' if f == 'email' }}" data-csv="{{ s._try(f) }}" data-th="{{ f }}">{{ s._try(f) }}</td>
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if students|length > 0 %}
+            <form class="links" style="display: block;" name="to-collectief" action="/studenten/collectief" method="post">
+                <input type="hidden" name="col-ids" value="">
+                <select name="to-group">
+                    <option value="0">naar groep</option>
+                    {% for item in sysls['s_group'].values() %}
+                        <option value="{{ item['id'] }}">{{ item['name'] }}</option>
+                    {% endfor %}
+                </select>
+                <select name="to-status">
+                    <option value="0">naar status</option>
+                    {% for item in sysls['s_status'].values() %}
+                        <option value="{{ item['id'] }}">{{ item['name'] }}</option>
+                    {% endfor %}
+                </select>
+                <input type="submit" name="save" value="Ga" >
+            </form>
+
+            <div class="links" >
+                {% if 'email' in view['fields'] %}
+                    <input type="submit" name="to-emails" value="Email-adressen" >
+                {% endif %}
+                <input type="submit" name="to-csv" value="Als CSV" >
+                <input style="background-color: var(--menu);" type="submit" name="to-excel" value="Download als CSV" >
+            </div>
+            <div class="links" >
+                <textarea id="csv-area" style="width: 800px;" rows="10"></textarea>
+            </div>
+        {% endif %}
+    </main>
+<script>
+    {% include 'studenten.js' %}
+</script>
+<script>
+    $('input[name="pf_url"]').on('keypress', function(e){
+        var keycode = (e.keyCode ? e.keyCode : e.which);
+        if(keycode == 13){
+            let pfu = $(this).val();
+            $('#no-ajax input[name="field-name"]').val('pf_url');
+            $('#no-ajax input[name="what"]').val('portfolio');
+            $('#no-ajax input[name="field-value"]').val(pfu);
+            let id = $(this).closest('tr').attr('id')*1;
+            $('#no-ajax input[name="student-id"]').val(id)
+            $('#no-ajax').submit();
+        }
+    });
+
+    $('input[name="grade"]').on('keypress', function(e){
+        var keycode = (e.keyCode ? e.keyCode : e.which);
+        if(keycode == 13){
+            let grade = $(this).val()*1;
+            if(grade < 0 || grade > 90){
+                $(this).val('').addClass('valop');
+                return;
+            }
+            $('#no-ajax input[name="field-name"]').val('grade');
+            $('#no-ajax input[name="what"]').val('grade');
+            $('#no-ajax input[name="field-value"]').val(grade);
+            let id = $(this).closest('tr').attr('id')*1;
+            $('#no-ajax input[name="student-id"]').val(id)
+            $('#no-ajax').submit();
+        }
+    });
+
+    $('td.circular').on('click', function(){
+        let id = $(this).closest('tr').attr('id')*1;
+        let cirval = $(this).attr('data-cirval')*1;
+        let cirname = $(this).attr('data-cirname');
+        $('#no-ajax input[name="student-id"]').val(id)
+        $('#no-ajax input[name="field-name"]').val(cirname);
+        $('#no-ajax input[name="what"]').val('circulars');
+        $('#no-ajax input[name="field-value"]').val(cirval);
+        $('#no-ajax').submit();
+    });
+
+    $('td.circular').on('contextmenu', function(){
+        var cirval = $(this).attr('data-cirval')*1;
+        if(cirval < 1){
+            return;
+        }
+        let id = $(this).closest('tr').attr('id')*1;
+        let cirname = $(this).attr('data-cirname');
+        $('#no-ajax input[name="student-id"]').val(id)
+        $('#no-ajax input[name="field-name"]').val(cirname);
+        $('#no-ajax input[name="what"]').val('circulars');
+        $('#no-ajax input[name="field-value"]').val(3);
+        $('#no-ajax').submit();
+    });
+
+</script>
+</body>
+</html>

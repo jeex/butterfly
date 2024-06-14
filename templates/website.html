@@ -5,7 +5,7 @@
 </head>
 <body>
     {% include '_menu.html' %}
-    <menu id="submenu">
+    <menu class="submenu">
             <ul>
                 <li class="{{ 'actief'|safe if bron == 'local' }}"><a href="/website/local">local</a></li>
                 <li class="{{ 'actief'|safe if bron == 'global' }}"><a href="/website/global">global</a></li>
@@ -26,14 +26,14 @@
                     {% endif %}
                 </article>
                 <footer>
-                    <input style="float:left; color: red;" type="submit" name="golive" value="save local &amp; global">
+                    <input class="valop asbutton" style="float:left;" type="submit" name="golive" value="save local &amp; global">
                     {% if bron == 'local' %}
                         <a href="#" class="refresh-local-view">Refresh local view</a>
                     {% else %}
                         <a href="#" class="refresh-global-view">Refresh global view</a>
                         <a href="https://cpnits.com" target="_blank">Open in browser</a>
                     {% endif %}
-                    <input style="float:right;" type="submit" name="opslaan" value="save local">
+                    <input class="asbutton" style="float:right;" type="submit" name="opslaan" value="save local">
                 </footer>
             </form>
         </section>
@@ -42,3 +42,4 @@
 
 </script>
 </body>
+</html>
