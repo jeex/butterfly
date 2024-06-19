@@ -1,12 +1,13 @@
 
-from flask import current_app, redirect, request, Blueprint, render_template
+from flask import redirect, request, Blueprint, render_template
 from ftplib import FTP
 import io
 
 from helpers.general import Timetools, JINJAstuff
+from helpers.singletons import UserSettings, Sysls
 
 def jinja_object(ding):
-	sysls_o = current_app.config['Sysls']
+	sysls_o = Sysls()
 	return JINJAstuff(ding, sysls_o.get_model())
 
 # =============== endpoints =====================
@@ -35,8 +36,9 @@ menuitem = 'website'
 @ep_website.get('/<path:bron>')
 @ep_website.get('/')
 def website(bron='local'):
-	if not current_app.config['Props'].magda(['beheer']):
-		return redirect('/')
+	jus = UserSettings()
+	if not jus.magda(['beheer']):
+		return redirect('/home')
 
 	# ophalen pickle met website
 	website = None
@@ -49,7 +51,7 @@ def website(bron='local'):
 				website = get_empty_website()
 				website['html'] = html
 
-	sysls_o = current_app.config['Sysls']
+	sysls_o = Sysls()
 	if website is None or bron == 'local':
 		bron = 'local'
 		website = sysls_o.get_sysl('website', other=True)
@@ -70,7 +72,7 @@ def website(bron='local'):
 	return render_template(
 		'website.html',
 		menuitem=menuitem,
-		props=current_app.config['Props'],
+		props=jus,
 		website=website,
 		message=message,
 		bron=bron
@@ -79,8 +81,9 @@ def website(bron='local'):
 @ep_website.post('/<path:bron>')
 @ep_website.post('/')
 def post_website(bron='local'):
-	if not current_app.config['Props'].magda(['beheer']):
-		return redirect('/')
+	jus = UserSettings()
+	if not jus.magda(['beheer']):
+		return redirect('/home')
 
 	if 'html' in request.form:
 		html = request.form.get('html')
@@ -88,10 +91,10 @@ def post_website(bron='local'):
 		return redirect(f'/website/{bron}?message=no html received')
 	website = dict(
 		update=Timetools.now_secs(),
-		door=current_app.config['Props']._alias,
+		door=jus._alias,
 		html=html,
 	)
-	sysls_o = current_app.config['Sysls']
+	sysls_o = Sysls()
 	if not sysls_o.make_sysl('website', website, other=True):
 		return redirect(f'/website/{bron}?message=save local failed')
 
@@ -107,10 +110,11 @@ def post_website(bron='local'):
 
 @ep_website.get('/htmlexample')
 def html_example():
-	if not current_app.config['Props'].magda(['beheer']):
-		return redirect('/')
+	jus = UserSettings()
+	if not jus.magda(['beheer']):
+		return redirect('/home')
 
-	sysls_o = current_app.config['Sysls']
+	sysls_o = Sysls()
 	website = sysls_o.get_sysl('website', other=True)
 	if website is None:
 		website = get_empty_website()

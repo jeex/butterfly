@@ -1,7 +1,8 @@
 
-from flask import current_app, redirect, request, Blueprint, render_template
+from flask import redirect, request, Blueprint, render_template
 
 from helpers.general import IOstuff, JINJAstuff, BaseClass
+from helpers.singletons import UserSettings, Emails
 
 class EmailBaseClass(BaseClass):
 	@classmethod
@@ -35,7 +36,8 @@ def emails():
 
 @ep_email.get('/<path:name>')
 def single_confirm(name: str):
-	emails_o = current_app.config['Emails']
+	jus = UserSettings()
+	emails_o = Emails()
 	mail = emails_o.get_single(name)
 	if mail is None:
 		mail = EmailBaseClass.get_empty()
@@ -44,7 +46,7 @@ def single_confirm(name: str):
 	return render_template(
 		'email-single.html',
 		menuitem='emails',
-		props=current_app.config['Props'],
+		props=jus,
 		alle=alle_emails,
 		placeholders=placeholders,
 		mail=EmailJinja(mail, EmailBaseClass.get_model()),
@@ -62,7 +64,7 @@ def single_post(name: str):
 	except Exception as e:
 		return redirect(f"/emails/{name}")
 	d['name'] = name
-	emails_o = current_app.config['Emails']
+	emails_o = Emails()
 	emails_o.make_email(d)
 	return redirect(f"/emails/{name}")
 

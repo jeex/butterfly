@@ -1,7 +1,6 @@
 import webview
 import webview.menu as wm
 import sys
-from flask import current_app
 
 from helpers.general import Mainroad
 
@@ -12,6 +11,9 @@ class Window:
 
 	def __init__(self, app):
 		wprops = Mainroad.get_window_props()
+		if wprops is None:
+			sys.exit('Ohoh. Groot probleem')
+
 		if isinstance(wprops, list):
 			if len(wprops) == 6:
 				self._wprops = wprops
@@ -45,13 +47,7 @@ class Window:
 		webview.start(menu=self.make_menu(), ssl=False)
 
 	def force_refresh(self):
-		result = self.venster.create_confirmation_dialog('Are you sure?', 'All settings will be removed!')
-		if result:
-			Props.force_refresh()
-			self.venster.load_url(self.app)
-			self.venster.destroy()
-		else:
-			pass
+		pass
 
 	def stop(self):
 		self.venster.destroy()
@@ -60,7 +56,7 @@ class Window:
 		return [
 			wm.Menu('Butterfly', [
 				wm.MenuAction('Close', self.stop),
-				wm.MenuAction('Force Refresh & Close', self.force_refresh),
+				# wm.MenuAction('Force Refresh & Close', self.force_refresh),
 			]),
 		]
 		''' wm.Menu(
@@ -98,7 +94,5 @@ class Window:
 			self.venster.minimized
 		]
 		Mainroad.set_window_props(self._wprops)
-
-		self.venster.title = f'{self._title}'
 
 

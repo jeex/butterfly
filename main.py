@@ -1,8 +1,9 @@
-from flask import Flask, g, redirect, request, session, Response, render_template, Blueprint
+from flask import Flask, redirect, request
 import logging
 
-from helpers.general import Casting, Timetools
+from helpers.general import Casting, Timetools, Mainroad
 from helpers.window import Window
+from helpers.singletons import UserSettings, Sysls
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
@@ -19,17 +20,20 @@ app.config['PERMANENT_SESSION_LIFETIME'] = 24 * 60 * 60
 app.config['SESSION_REFRESH_EACH_REQUEST'] = True
 app.config['SESSION_COOKIE_DOMAIN'] = None
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 300
+app.config['initialized'] = False
+
 app.url_map.strict_slashes = False
 
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.WARNING)
 
-from helpers.globals import Emails, Views, Students, Sysls, Props
-app.config['Props'] = Props()
-app.config['Sysls'] = Sysls()
-app.config['Emails'] = Emails()
-app.config['Views'] = Views()
-app.config['Students'] = Students()
+if not app.config['initialized']:
+	Mainroad.set_new_onedrive()
+	app.config['initialized'] = True
+
+@app.get('/')
+def index():
+	return redirect('/home')
 
 # ============= JINJA FILTERS =============
 @app.template_filter('initials')
@@ -43,8 +47,9 @@ def initials(name):
 @app.template_filter('circ')
 def circular_color(val):
 	val = Casting.int_(val, 0)
+	sysls = Sysls()
 	try:
-		cees = app.config['Sysls'].get_sysl('s_circular')
+		cees = sysls.get_sysl('s_circular')
 		return cees[val]['color']
 	except:
 		return '#eeeeee'
@@ -106,27 +111,30 @@ def asdatetime(i):
 		return Timetools.ts_2_td(i, rev=True, local=True)
 	except:
 		return i
-'''
+
+
 @app.errorhandler(Exception)
 def handle_error(e):
-	Props.set_prop('last_url', '')
-	return redirect('/')
-'''
+	jus = UserSettings()
+	jus.set_prop('last_url', '')
+	return redirect('/home')
+
 
 @app.before_request
 def before_request():
+	jus = UserSettings()
+
 	# print('Before request', request.path)
 	# handling the first request, restarting where we left of
 	rp = request.full_path
 	if rp.endswith('?'):
 		rp = rp[:-1]
 
-	# print('Before request', Props.get_prop('last_url'))
 	if 'static' in rp:
 		return
-	if app.config['Props'].is_new():
-		app.config['Props']._started = False
-		lasturl = app.config['Props'].get_prop('last_url', default='/')
+	if jus.is_new():
+		jus._started = False
+		lasturl = jus.get_prop('last_url', default='/home')
 		if not lasturl in ['', '/']:
 			return redirect(lasturl)
 	else:
@@ -136,8 +144,7 @@ def before_request():
 		elif len(request.form) > 0:
 			pass
 		else:
-			app.config['Props'].set_prop('last_url', rp)
-	# print('After request', Props.get_prop('last_url'))
+			jus.set_prop('last_url', rp)
 
 
 @app.after_request
@@ -173,9 +180,8 @@ app.register_blueprint(ep_beheer)
 from endpoint.website import ep_website
 app.register_blueprint(ep_website)
 
-if True:
-	if __name__ == '__main__':
-		app.run() # host="0.0.0.0"
+if False and __name__ == '__main__':
+	app.run()
 else:
 	Window(app)
 

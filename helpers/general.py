@@ -6,12 +6,10 @@ import os
 import sys
 from urllib.parse import quote_plus as kwoot
 import re
-from flask import redirect
 import pickle
-
-import userpaths as Up
 import appdirs
-from PyQt6.QtWidgets import QApplication, QFileDialog
+import tkinter as tk
+from tkinter import filedialog
 
 class Pickles:
 	@classmethod
@@ -41,64 +39,91 @@ class Pickles:
 
 class Mainroad:
 	@classmethod
-	def get_props_path(cls):
+	def get_settings_path(cls):
 		# if not, make one
-		dirpad = str(os.path.join(appdirs.user_config_dir(), 'JeexButterfly'))
-		if not os.path.isdir(dirpad):
-			os.makedirs(dirpad)
-		propspad = os.path.join(dirpad, 'butterfly_props.pickle')
-		if not os.path.isfile(propspad):
-			Pickles.write(propspad, dict())
-		return propspad
+		settings_dir = os.path.join(appdirs.user_config_dir(), 'JeexButterfly')
+		if not os.path.isdir(settings_dir):
+			os.makedirs(settings_dir)
+		settings_pickle_path = os.path.join(settings_dir, 'butterfly_props.pickle')
+
+		if not os.path.isfile(settings_pickle_path):
+			d = dict(
+				window=[],
+				onedrive='',
+			)
+			Pickles.write(settings_pickle_path, d)
+			return settings_pickle_path
+
+		d = Pickles.read(settings_pickle_path)
+		if d is None:
+			d = dict(
+				window=[],
+				onedrive='',
+			)
+			Pickles.write(settings_pickle_path, d)
+			return settings_pickle_path
+
+		if 'window' in d and 'onedrive' in d:
+			return settings_pickle_path
+
+		if not 'window' in d:
+			d['window'] = []
+			Pickles.write(settings_pickle_path, d)
+			return settings_pickle_path
+
+		if not 'onedrive' in d:
+			d['onedrive'] = ''
+			Pickles.write(settings_pickle_path, d)
+			return settings_pickle_path
 
 	@classmethod
-	def get_od_path(cls):
-		# from props, if not ask with window
-		propspad = cls.get_props_path()
+	def get_onedrive_path(cls):
+		try:
+			settings_path = cls.get_settings_path()
+			settings = Pickles.read(settings_path)
+			onedrive_path = settings[f'onedrive']
+			return onedrive_path
+		except:
+			# geen onedrive in settings
+			return None
+
+	@classmethod
+	def get_window_props(cls) -> list|None:
+		propspad = cls.get_settings_path()
 		props = Pickles.read(propspad)
 		try:
-			pad = props['od_path']
-			if os.path.isdir(pad):
-				return pad
+			return props['window']
 		except:
-			pass
-		odpad = cls.pyqt6_ask_od_path()
-		if props is None:
-			props = dict()
-		print(props)
-		print(odpad)
-		props['od_path'] = odpad
-		Pickles.write(propspad, props)
-
-	@classmethod
-	def pyqt6_ask_od_path(cls):
-		# and store in props
-		qt = QApplication(sys.argv)
-		qt.setStyle('Breeze')
-		startat = str(Up.get_my_documents())
-		p = (QFileDialog.getExistingDirectory
-		     (caption="Waar ligt de OneDrive dir met _DATABASE erin?",
-		      directory=startat)
-		     )
-		if p is None or p == '':
-			sys.exit()
-		return p
-
-	@classmethod
-	def get_window_props(cls):
-		propspad = cls.get_props_path()
-		props = Pickles.read(propspad)
-		try:
-			return props['window_props']
-		except:
-			props['window_props'] = list()
-			Pickles.write(propspad, props)
-			return list()
+			return None
 
 	@classmethod
 	def set_window_props(cls, window_props):
-		propspad = cls.get_props_path()
-		Pickles.write(propspad, window_props)
+		propspad = cls.get_settings_path()
+		props = Pickles.read(propspad)
+		props['window'] = window_props
+		Pickles.write(propspad, props)
+
+	@classmethod
+	def set_new_onedrive(cls):
+		# from main thread
+		print('INITIALIZED')
+		s = cls.get_onedrive_path()
+		if not s is None:
+			if '/BUTTERFLY_CPNITS' in s:
+				return
+		while True:
+			root = tk.Tk()
+			root.withdraw()
+			odname = filedialog.askdirectory()
+			if odname is None:
+				continue
+			if not '/BUTTERFLY_CPNITS' in odname:
+				continue
+			break
+		pp = cls.get_settings_path()
+		p = Pickles.read(pp)
+		p['onedrive'] = odname
+		Pickles.write(pp, p)
 
 class BaseClass:
 	@classmethod

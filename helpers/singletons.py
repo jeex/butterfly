@@ -4,8 +4,6 @@ import string
 from copy import deepcopy
 from collections import OrderedDict
 
-from flask import current_app
-
 from helpers.general import (
 	Casting,
 	Timetools,
@@ -13,63 +11,15 @@ from helpers.general import (
 	Pickles,
 	Mainroad
 )
+class SyslsMeta(type):
+	_instances = {}
+	def __call__(cls, *args, **kwargs):
+		if cls not in cls._instances:
+			instance = super().__call__(*args, **kwargs)
+			cls._instances[cls] = instance
+		return cls._instances[cls]
 
-class Props:
-	_props_path = ''
-	_od_path = ''
-	_props = dict()
-	_started = True
-	_rollen = ['administratie', 'docent', 'beheer', 'admin']
-	_alias = 'Victor'
-	_title = ''
-
-	def __init__(self):
-		self.init_props()
-
-	def init_props(self): # PROPS pad en OD pad EN het od pad is te vinden in de props pickle
-		self._props_path = Mainroad.get_props_path()
-		self._props = Pickles.read(self._props_path)
-		if self._props is None:
-			sys.exit(f'Kon geen settingsfile make of lezen op locatie: {self._props_path}')
-
-	def odpad(self):
-		Mainroad.get_od_path()
-
-	def set_window_title(self, title: str):
-		self._title = title
-
-	def alias(self):
-		return self._alias
-
-	def magda(self, rol: list, alias: str=None) -> bool:
-		# alias is de alias van het ding
-		if 'admin' in self._rollen:
-			return True
-		damag = len(list(set(rol) & set(self._rollen))) > 0
-		if not alias is None:
-			damag = damag and alias.strip() == self.alias()
-
-		return damag
-
-	def is_new(self):
-		return self._started
-
-	def get_prop(self, key: str, default=None):
-		try:
-			return self._props[key]
-		except:
-			return default
-
-	def set_prop(self, key: str, val):
-		self._props[key] = val # update or create
-		Pickles.write(self._props_path, self._props)
-		self.init_props()
-
-	def force_refresh(self):
-		Pickles.delete(self._props_path)
-		self._props = dict()
-
-class Sysls:
+class Sysls(metaclass=SyslsMeta):
 	_systempath = ''
 	_sysls = [
 		's_gender',
@@ -92,17 +42,25 @@ class Sysls:
 		# 's_user',
 	]
 	_sysmem = dict()
+	error_in_sysmem = False
 
 	def __init__(self):
 		self.init()
 
 	def init(self):
-		self._systempath = os.path.join(Mainroad.get_od_path(), '_DATABASE', 'system')
+		self._systempath = os.path.join(Mainroad.get_onedrive_path(), '_DATABASE', 'system')
+
 		self._sysmem = dict()
 		for syslname in self._sysls:
 			d = Pickles.read(os.path.join(self._systempath, f"{syslname}.pickle"))
 			if not d is None:
 				self._sysmem[syslname] = self.sorteer_by_ordering(d) # OrderedDict
+			else:
+				self.error_in_sysmem = True
+				pass
+
+	def is_valid(self):
+		return not self.error_in_sysmem
 
 	def sorteer_by_ordering(self, d: dict) -> OrderedDict:
 		ll = list(d.values())
@@ -213,7 +171,15 @@ class Sysls:
 			d[field] = val['default']
 		return d
 
-class Emails:
+class EmailsMeta(type):
+	_instances = {}
+	def __call__(cls, *args, **kwargs):
+		if cls not in cls._instances:
+			instance = super().__call__(*args, **kwargs)
+			cls._instances[cls] = instance
+		return cls._instances[cls]
+
+class Emails(metaclass=EmailsMeta):
 	_emailspath = ''
 	_sysmem = dict()
 
@@ -221,7 +187,7 @@ class Emails:
 		self.init()
 
 	def init(self):
-		self._emailspath = os.path.join(Mainroad.get_od_path(), '_DATABASE', 'emails')
+		self._emailspath = os.path.join(Mainroad.get_onedrive_path(), '_DATABASE', 'emails')
 		self._sysmem = dict()
 		if not os.path.isdir(self._emailspath):
 			os.mkdir(self._emailspath)
@@ -253,7 +219,16 @@ class Emails:
 	def get(self):
 		return deepcopy(self._sysmem)
 
-class Views:
+class ViewsMeta(type):
+	_instances = {}
+
+	def __call__(cls, *args, **kwargs):
+		if cls not in cls._instances:
+			instance = super().__call__(*args, **kwargs)
+			cls._instances[cls] = instance
+		return cls._instances[cls]
+
+class Views(metaclass=ViewsMeta):
 	_viewspath = ''
 	_defaultname = 'default'
 	_sysmem = dict()
@@ -262,10 +237,11 @@ class Views:
 		self.init()
 
 	def empty_view(self):
+		jus = UserSettings()
 		return dict(
 			name=self._defaultname,
 			created_ts=Timetools.now_secs(),
-			alias=current_app.config['Props'].alias(),
+			alias=jus.alias(),
 			color='#ffffff',
 			status=1,
 			fields=['id', 'firstname', 'lastname'],
@@ -273,7 +249,7 @@ class Views:
 		)
 
 	def init(self):
-		self._viewspath = os.path.join(Mainroad.get_od_path(), '_DATABASE', 'views')
+		self._viewspath = os.path.join(Mainroad.get_onedrive_path(), '_DATABASE', 'views')
 		self._sysmem = dict()
 		if not os.path.isdir(self._viewspath):
 			os.mkdir(self._viewspath)
@@ -319,26 +295,36 @@ class Views:
 			self.init()
 
 	def mijn_views(self):
+		jus = UserSettings()
 		all = self._sysmem
 		mijnviews = list()
 		for key, val in all.items():
-			if val['alias'] == current_app.config['Props'].alias():
+			if val['alias'] == jus.alias():
 				mijnviews.append(key)
 		return mijnviews
 
 	def mijn_groepen(self, all=None):
 		# groepen waarbij ik een view heb
+		jus = UserSettings()
 		all = self._sysmem
 		mijngroepen = list()
 		for key, val in all.items():
-			if val['alias'] == current_app.config['Props'].alias():
+			if val['alias'] == jus.alias():
 				for g in val['groups']:
 					if not g in mijngroepen:
 						mijngroepen.append(g)
 
 		return mijngroepen
 
-class Students:
+class StudentsMeta(type):
+	_instances = {}
+	def __call__(cls, *args, **kwargs):
+		if cls not in cls._instances:
+			instance = super().__call__(*args, **kwargs)
+			cls._instances[cls] = instance
+		return cls._instances[cls]
+
+class Students(metaclass=StudentsMeta):
 	_stud_p_path = ''
 	_stud_dir_path = ''
 	_sysmem = dict()
@@ -347,8 +333,8 @@ class Students:
 		self.init()
 
 	def init(self):
-		self._stud_p_path = os.path.join(Mainroad.get_od_path(), '_DATABASE', 'students')
-		self._stud_dir_path = os.path.join(Mainroad.get_od_path(), 'JAREN')
+		self._stud_p_path = os.path.join(Mainroad.get_onedrive_path(), '_DATABASE', 'students')
+		self._stud_dir_path = os.path.join(Mainroad.get_onedrive_path(), 'JAREN')
 		self._sysmem = dict()
 		for fname in os.listdir(self._stud_p_path):
 			if fname.startswith('.'):
@@ -422,7 +408,7 @@ class Students:
 		return self.make_studend_folder_path_from_d(d)
 
 	def make_studend_folder_path_from_d(self, d):
-		sysls_o = current_app.config['Sysls']
+		sysls_o = Sysls()
 		if d['s_year'] < 2020:
 			return None
 		if not d['s_term'] in [1, 2, 3, 4, 5, 6]:
@@ -464,7 +450,7 @@ class Students:
 		return newid + 1
 
 	def as_html(self, id):
-		sysls_o = current_app.config['Sysls']
+		sysls_o = Sysls()
 		# print(sys._getframe(1).f_code.co_name)
 		d = self.get_by_id(id)
 		studfields = list(d.keys())
@@ -502,7 +488,7 @@ class Students:
 				return f"{htm}\n\t\t\t<p><span></span></p>"
 
 		def make_circular(html, circ):
-			views_o = current_app.config['Views']
+			views_o = Views()
 			# creates one line for one circular
 			view = views_o.get_single(circ)
 
@@ -543,7 +529,7 @@ class Students:
 		else:
 			kleur = "#eee"
 
-		html = basic_student_html() % (d['firstname'], d['lastname'], kleur, kleur, id, d['firstname'], d['lastname'])
+		html = self.basic_student_html() % (d['firstname'], d['lastname'], kleur, kleur, id, d['firstname'], d['lastname'])
 
 		# velden
 		html = make_li(html, 'Voornaam', 'firstname')
@@ -603,60 +589,134 @@ class Students:
 			f.write(html)
 
 
-def basic_student_html():
-	return '''<!DOCTYPE html>
-<html lang="en">
-	<head>
-		<title>%s %s</title>
-		<style>
-			*{
-				font-family: Arial, Helvetica, sans-serif;
-				font-size: 14px;
-				border-radius: 3px;
-			}
-			body{
-				padding: 1em;
-			}
-			ul{
-				list-style: inside;
-                list-style-type: none;
-                margin: 0;
-                border: 2px solid %s;
-				padding: 1em;
-            }
-            li{
-                margin: 0 0 0.5em 0;
-                padding: 0;
-                border-bottom: 1px solid #ddd;
-            }
-            li span{
-                display: inline-block;
-                width: 10em;
-                font-size: 0.8em;
-            }
-            div.notes,
-            div.circulars{
-                margin: 1em 0 0 0;
-                border: 2px solid %s;
-				padding: 1em;
-            }
-            p span{
-                border-bottom: 1px solid #ddd;
-                font-size: 0.8em;
-            }
-            .circular{
-                overflow: hidden;
-				white-space: nowrap;
-            }
-            .circular td,
-            .circular th{
-                font-size: 0.8em;
-                padding: 0.25em 0.5em;
-            }
+	def basic_student_html(self):
+		return '''<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<title>%s %s</title>
+			<style>
+				*{
+					font-family: Arial, Helvetica, sans-serif;
+					font-size: 14px;
+					border-radius: 3px;
+				}
+				body{
+					padding: 1em;
+				}
+				ul{
+					list-style: inside;
+	                list-style-type: none;
+	                margin: 0;
+	                border: 2px solid %s;
+					padding: 1em;
+	            }
+	            li{
+	                margin: 0 0 0.5em 0;
+	                padding: 0;
+	                border-bottom: 1px solid #ddd;
+	            }
+	            li span{
+	                display: inline-block;
+	                width: 10em;
+	                font-size: 0.8em;
+	            }
+	            div.notes,
+	            div.circulars{
+	                margin: 1em 0 0 0;
+	                border: 2px solid %s;
+					padding: 1em;
+	            }
+	            p span{
+	                border-bottom: 1px solid #ddd;
+	                font-size: 0.8em;
+	            }
+	            .circular{
+	                overflow: hidden;
+					white-space: nowrap;
+	            }
+	            .circular td,
+	            .circular th{
+	                font-size: 0.8em;
+	                padding: 0.25em 0.5em;
+	            }
+	
+			</style>
+		</head>
+		<body>
+			<h1>%s %s %s</h1>
+			<ul>
+	'''
 
-		</style>
-	</head>
-	<body>
-		<h1>%s %s %s</h1>
-		<ul>
-'''
+
+class UserSetingsMeta(type):
+	_instances = {}
+	def __call__(cls, *args, **kwargs):
+		if cls not in cls._instances:
+			instance = super().__call__(*args, **kwargs)
+			cls._instances[cls] = instance
+		return cls._instances[cls]
+
+class UserSettings(metaclass=UserSetingsMeta):
+	_settings_path = ''
+	_onedrive_path = ''
+	_props = dict()
+	_started = True
+	_rollen = ['administratie', 'docent', 'beheer', 'admin']
+	_alias = 'Victor'
+	_title = ''
+
+	def __init__(self):
+		self.init_props()
+
+	def init_props(self):  # PROPS pad en OD pad EN het od pad is te vinden in de props pickle
+		try:
+			self._settings_path = Mainroad.get_settings_path()
+			self._props = Pickles.read(self._settings_path)
+		except:
+			sys.exit(f'Kon geen settingsfile make of lezen')
+		if self._settings_path == '' \
+				or self._settings_path is None \
+				or self._props is None:
+			sys.exit(f'Kon geen settingsfile make of lezen op locatie: {self._settings_path}')
+
+		try:
+			self._onedrive_path = Mainroad.get_onedrive_path()
+		except:
+			sys.exit(f'Kon geen onedrive vinden of lezen')
+
+	def set_window_title(self, title: str):
+		self._title = title
+
+	def alias(self):
+		return self._alias
+
+	def odpad(self):
+		return self._onedrive_path
+
+	def magda(self, rol: list, alias: str = None) -> bool:
+		# alias is de alias van het ding
+		if 'admin' in self._rollen:
+			return True
+		damag = len(list(set(rol) & set(self._rollen))) > 0
+		if not alias is None:
+			damag = damag and alias.strip() == self.alias()
+
+		return damag
+
+	def is_new(self):
+		return self._started
+
+	def get_prop(self, key: str, default=None):
+		try:
+			return self._props[key]
+		except:
+			return default
+
+	def set_prop(self, key: str, val):
+		self._props[key] = val  # update or create
+		Pickles.write(self._settings_path, self._props)
+		self.init_props()
+
+	def force_refresh(self):
+		Pickles.delete(self._settings_path)
+		self._props = dict()

@@ -1,7 +1,8 @@
 # groepen
-from flask import current_app, redirect, request, Blueprint, render_template
+from flask import redirect, request, Blueprint, render_template
 
 from helpers.general import Casting, Timetools, IOstuff, ListDicts
+from helpers.singletons import UserSettings, Sysls, Students, Views
 
 from endpoint.studenten import (
 	Student,
@@ -28,11 +29,13 @@ def tofilter():
 @ep_groepen.get('/<int:groepnr>/<path:viewname>')
 @ep_groepen.get('/<int:groepnr>')
 def studenten_groep(groepnr, viewname=''):
+	jus = UserSettings()
+
 	sta, fil, tel, act = filter_stuff()
 	filter = ''
 
 	# groepen
-	sysls_o = current_app.config['Sysls']
+	sysls_o = Sysls()
 	all = sysls_o.get_sysl('s_group')
 	groepen = list()
 	groep = None
@@ -44,7 +47,7 @@ def studenten_groep(groepnr, viewname=''):
 	# studenten
 	students = list()
 	if not groep is None:
-		students_o = current_app.config['Students']
+		students_o = Students()
 		all = students_o.all_as_lod()
 		for s in all:
 			# filter on this group
@@ -65,7 +68,7 @@ def studenten_groep(groepnr, viewname=''):
 	allfieldnames = list(Student.get_empty().keys())
 
 	# alle views bij deze groep
-	views_o = current_app.config['Views']
+	views_o = Views()
 	allviews = views_o.get()
 	for v in list(allviews.keys()):
 		if v == 'default':
@@ -96,7 +99,7 @@ def studenten_groep(groepnr, viewname=''):
 	return render_template(
 		'groep-studenten.html',
 		menuitem=menuitem,
-		props=current_app.config['Props'],
+		props=jus,
 		students=students,
 		groepen=groepen,
 		groep=groep,
@@ -118,14 +121,12 @@ def studenten_groep_post(groepnr, viewname):
 	if not IOstuff.check_required_keys(request.form, ['what', 'field-name', 'field-value', 'student-id']):
 		return redirect(f"/groepen/{groepnr}/{viewname}")
 
-	print(request.form)
-
 	cc = 'circulars' #avoid typoos
 	id = Casting.int_(request.form['student-id'], 0)
 	field = Casting.str_(request.form['field-name'], '')
 	what = Casting.str_(request.form['what'], '')
 
-	students_o = current_app.config['Students']
+	students_o = Students()
 	student = students_o.get_by_id(id)
 
 	if student is None:
@@ -146,19 +147,15 @@ def studenten_groep_post(groepnr, viewname):
 			cirval += 1
 		else:
 			cirval = 0
-		cirname = field
-
-		print(viewname, cirname, cirval)
 
 		if not cc in student:
-			student[cc] = {viewname: {cirname: cirval}}
+			student[cc] = {viewname: {field: cirval}}
 		if not viewname in student[cc]:
-			student[cc][viewname] = {cirname: cirval}
-		if not cirname in student[cc][viewname]:
-			student[cc][viewname][cirname] = cirval
+			student[cc][viewname] = {field: cirval}
+		if not field in student[cc][viewname]:
+			student[cc][viewname][field] = cirval
 		else:
-			student[cc][viewname][cirname] = cirval
-		print(student[cc])
+			student[cc][viewname][field] = cirval
 
 	students_o.make_student_pickle(id, student)
 	# eventualy fix student dir issues

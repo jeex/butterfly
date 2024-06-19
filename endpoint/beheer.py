@@ -1,9 +1,10 @@
-from flask import current_app, redirect, request, Blueprint, render_template
+from flask import redirect, request, Blueprint, render_template
 
 from helpers.general import Casting, IOstuff, ListDicts, JINJAstuff
+from helpers.singletons import UserSettings, Sysls
 
 def jinja_object(ding):
-	sysls_o = current_app.config['Sysls']
+	sysls_o = Sysls()
 	return JINJAstuff(ding, sysls_o.get_model())
 
 # =============== endpoints =====================
@@ -21,11 +22,12 @@ menuitem = 'beheer'
 @ep_beheer.get('/<path:sysl>')
 @ep_beheer.get('/<path:sysl>/<int:id>')
 def kiezen(sysl='', id=0):
-	if not current_app.config['Props'].magda(['beheer']):
-		return redirect('/')
+	jus = UserSettings()
+	if not jus.magda(['beheer']):
+		return redirect('/home')
 
 	# beheer lijsten
-	sysls_o = current_app.config['Sysls']
+	sysls_o = Sysls()
 	lijsten = sysls_o.get_lijsten_nicename()
 	if sysl != '':
 		allitems = sysls_o.get_sysl_as_list(sysl)
@@ -38,7 +40,7 @@ def kiezen(sysl='', id=0):
 	return render_template(
 		'beheer.html',
 		menuitem=menuitem,
-		props=current_app.config['Props'],
+		props=jus,
 		lijsten=lijsten,
 		syslname=sysl,
 		fields=fields,
@@ -64,7 +66,7 @@ def ep_beheer_post(sysl, id=0):
 	if d['id'] == 0:
 		return redirect(f'/beheer/{sysl}')
 
-	sysls_o = current_app.config['Sysls']
+	sysls_o = Sysls()
 	current = sysls_o.get_sysl_item(sysl, d['id'])
 	if not current is None:
 		if d['id'] != current['id']:
@@ -98,7 +100,7 @@ def post_ordering(sysl):
 		print(f"ordering mislukt {request.form.get('ordering')}")
 		return redirect(f'/beheer/{sysl}')
 
-	sysls_o = current_app.config['Sysls']
+	sysls_o = Sysls()
 	alle = sysls_o.get_sysl(sysl)
 	oo = 1
 	for id in ordering:

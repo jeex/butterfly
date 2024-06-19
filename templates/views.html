@@ -235,7 +235,7 @@
     }
 
     let name_safe = function(erin, maxlen){
-        erin = erin.replaceAll(/[^a-z0-9_]/gi, '').toLowerCase().substring(0,maxlen);
+        erin = erin.replaceAll(/[^a-zA-Z0-9_]/gi, '').substring(0,maxlen);
         return erin
     }
 

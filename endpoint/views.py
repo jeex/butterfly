@@ -1,12 +1,13 @@
 
-from flask import current_app, redirect, request, Blueprint, render_template
+from flask import redirect, request, Blueprint, render_template
 from helpers.general import Casting, Timetools, JINJAstuff, BaseClass
 from endpoint.studenten import Student
 
+from helpers.singletons import UserSettings, Sysls, Views
 
 # VIEWS WORDEN ALLEEN LOSGELATEN OP GROEPEN, NIET OP STUDENTEN!!!
 def jinja_object(ding):
-	sysls_o = current_app.config['Sysls']
+	sysls_o = Sysls()
 	return JINJAstuff(ding, sysls_o.get_model())
 
 # =============== endpoints =====================
@@ -24,7 +25,7 @@ menuitem = 'views'
 class View(BaseClass):
 	@classmethod
 	def get_model(cls) -> dict:
-		views_o = current_app.config['Views']
+		views_o = Views()
 		basic = views_o.empty_view()
 		d = dict()
 		for b in basic:
@@ -38,7 +39,7 @@ def index():
 
 @ep_views.get('/<path:singlename>')
 def view(singlename):
-	views_o = current_app.config['Views']
+	views_o = Views()
 	all = views_o.get()
 	mijnviews = views_o.mijn_views()
 	single = None
@@ -62,7 +63,7 @@ def view(singlename):
 		else:
 			fields[s] = s
 
-	sysls_o = current_app.config['Sysls']
+	sysls_o = Sysls()
 	groepen = sysls_o.get_sysl('s_group')
 	for g in list(groepen.keys()):
 		if groepen[g]['status'] != 1:
@@ -72,7 +73,7 @@ def view(singlename):
 	return render_template(
 		'views.html',
 		menuitem=menuitem,
-		props=current_app.config['Props'],
+		props=UserSettings(),
 		all=all,
 		single=single,
 		kopie=None,
@@ -90,7 +91,7 @@ def views_post(singlename):
 	except:
 		return redirect(f'/views/{singlename}')
 
-	views_o = current_app.config['Views']
+	views_o = Views()
 	single = views_o.get_single(singlename)
 	single['color'] = color
 	single['status'] = status
@@ -99,7 +100,7 @@ def views_post(singlename):
 
 @ep_views.post('/edit/<path:singlename>')
 def view_post(singlename):
-	views_o = current_app.config['Views']
+	views_o = Views()
 	single = views_o.get_single(singlename)
 	if single is None:
 		return redirect('/views/default')
@@ -130,14 +131,14 @@ def view_post(singlename):
 
 @ep_views.post('/delete/<path:singlename>')
 def delete_post(singlename):
-	views_o = current_app.config['Views']
+	views_o = Views()
 	if not singlename in ['default', '']:
 		views_o.delete(singlename)
 	return redirect('/views/default')
 
 @ep_views.get('/kopie/<path:copyname>')
 def kopie(copyname):
-	views_o = current_app.config['Views']
+	views_o = Views()
 	all = views_o.get()
 	single = None
 	for key, val in all.items():
@@ -148,7 +149,7 @@ def kopie(copyname):
 	return render_template(
 		'views.html',
 		menuitem=menuitem,
-		props=current_app.config['Props'],
+		props=UserSettings(),
 		all=all,
 		single=single,
 		kopie=copyname,
@@ -157,7 +158,8 @@ def kopie(copyname):
 
 @ep_views.post('/kopie/<path:copyname>')
 def kopie_post(copyname):
-	views_o = current_app.config['Views']
+	jus = UserSettings()
+	views_o = Views()
 	try:
 		newname = Casting.name_safe(request.form['newname'], True)
 		if newname == '':
@@ -170,7 +172,7 @@ def kopie_post(copyname):
 	# make new views with newname
 	newview = views_o.get_single(copyname)
 	newview['name'] = newname
-	newview['alias'] = current_app.config['Props'].alias()
+	newview['alias'] = jus.alias()
 	newview['created_ts'] = Timetools.now_secs()
 	newview['groups'] = list()
 	newview['color'] = '#ffffff'
@@ -179,7 +181,7 @@ def kopie_post(copyname):
 
 @ep_views.post('/group/<path:singlename>')
 def group_post(singlename):
-	views_o = current_app.config['Views']
+	views_o = Views()
 	view = views_o.get_single(singlename)
 	if view is None:
 		return redirect('/views/default')

@@ -5,9 +5,10 @@ import platform
 import subprocess
 from copy import deepcopy
 
-from flask import current_app, redirect, request, Blueprint, render_template
+from flask import redirect, request, Blueprint, render_template
 
 from helpers.general import Casting, Timetools, IOstuff, ListDicts, JINJAstuff, BaseClass
+from helpers.singletons import UserSettings, Sysls, Students, Emails
 
 # handles one student
 class Student(BaseClass):
@@ -86,7 +87,7 @@ class Note(BaseClass):
 
 class  StudentJinja(JINJAstuff):
 	def _s_item(self, lijstnaam: str) -> dict:
-		sysls_o = current_app.config['Sysls']
+		sysls_o = Sysls()
 		empty: dict = sysls_o.get_empty()
 		key = self._try(lijstnaam, default=None)
 		if key is None:
@@ -175,7 +176,7 @@ def tofilter():
 
 @ep_studenten.get('/<path:filter>')
 def studenten(filter):
-	students_o = current_app.config['Students']
+	students_o = Students()
 	# get and set filter
 	sta, fil, tel, act = filter_stuff()
 	if not filter in sta:
@@ -197,13 +198,13 @@ def studenten(filter):
 	del(all)
 
 	groepmenu = filter in ['registratie', 'studenten', 'beoordelen']
-	sysls_o = current_app.config['Sysls']
+	sysls_o = Sysls()
 
 	return render_template(
 		'studenten.html',
 		menuitem=menuitem,
 		groepmenu=groepmenu,
-		props=current_app.config['Props'],
+		props=UserSettings(),
 		students=students,
 		filter=filter,
 		filters=fil,
@@ -215,14 +216,15 @@ def studenten(filter):
 
 @ep_studenten.get('/zoek')
 def studenten_zoek():
+	jus = UserSettings()
 	try:
 		zoekterm = Casting.str_(request.args.get('s'), '')
 	except:
 		zoekterm = ''
 	if zoekterm == '':
-		return redirect(current_app.config['Props'].get_prop('last_url', default='/'))
+		return redirect(jus.get_prop('last_url', default='/home'))
 
-	students_o = current_app.config['Students']
+	students_o = Students()
 	all = students_o.all_as_lod()
 	gevonden = list()
 	for a in all:
@@ -230,7 +232,7 @@ def studenten_zoek():
 			gevonden.append(a)
 
 	if len(gevonden) == 0:
-		return redirect(current_app.config['Props'].get_prop('last_url', default='/'))
+		return redirect(jus.get_prop('last_url', default='/home'))
 
 	sta, fil, tel, act = filter_stuff()
 	groepmenu = filter in ['registratie', 'studenten', 'beoordelen']
@@ -245,13 +247,13 @@ def studenten_zoek():
 				break
 		students.append(StudentJinja(s, Student.get_model()))
 
-	sysls_o = current_app.config['Sysls']
+	sysls_o = Sysls()
 
 	return render_template(
 		'studenten.html',
 		menuitem=menuitem,
 		groepmenu=groepmenu,
-		props=current_app.config['Props'],
+		props=jus,
 		students=students,
 		filter='alle',
 		filters=fil,
@@ -263,20 +265,21 @@ def studenten_zoek():
 
 @ep_studenten.post('/collectief')
 def collectief_post():
+	jus = UserSettings()
 	if not IOstuff.check_required_keys(request.form, ['col-ids', 'to-group', 'to-status', 'save']):
-		return redirect(current_app.config['Props'].get_prop('last_url', default='/'))
+		return redirect(jus.get_prop('last_url', default='/home'))
 
 	try:
 		ids = list(request.form.get('col-ids').split(','))
 		for i in range(len(ids)):
 			ids[i] = Casting.int_(ids[i], 0)
 	except:
-		return redirect(current_app.config['Props'].get_prop('last_url', default='/'))
+		return redirect(jus.get_prop('last_url', default='/home'))
 
 	s_group = Casting.int_(request.form.get('to-group'), 0)
 	s_status = Casting.int_(request.form.get('to-status'), 0)
 
-	students_o = current_app.config['Students']
+	students_o = Students()
 	for id in ids:
 		student = students_o.get_by_id(id)
 		if student is None:
@@ -289,11 +292,11 @@ def collectief_post():
 		students_o.make_student_pickle(id, newstudent)
 		fix_student_dir(id, student, newstudent)
 
-	return redirect(current_app.config['Props'].get_prop('last_url', default='/'))
+	return redirect(jus.get_prop('last_url', default='/home'))
 
 @ep_studenten.get('/single/<int:id>')
 def single_get(id):
-	students_o = current_app.config['Students']
+	students_o = Students()
 	statussen = get_statussen()
 	student = students_o.get_by_id(id)
 	if student is None:
@@ -311,12 +314,12 @@ def single_get(id):
 		grade = create_mail(student, 'grade')
 
 	studentmappad = get_studentmap_pad(id)
-	sysls_o = current_app.config['Sysls']
+	sysls_o = Sysls()
 
 	return render_template(
 		'student.html',
 		menuitem=menuitem,
-		props=current_app.config['Props'],
+		props=UserSettings(),
 		lijsten=sysls_o.get_lijsten_nicename(),
 		sysls=sysls_o.get(),
 		student=StudentJinja(student, Student.get_model()),
@@ -328,7 +331,7 @@ def single_get(id):
 
 @ep_studenten.get('/new')
 def single_new_get():
-	students_o = current_app.config['Students']
+	students_o = Students()
 	id = students_o.new_student_id()
 	statussen = get_statussen()
 	student = Student.get_empty()
@@ -338,12 +341,12 @@ def single_new_get():
 
 	# TODO zelfde als bij vorige
 	student['s_origin'] = 2
-	sysls_o = current_app.config['Sysls']
+	sysls_o = Sysls()
 
 	return render_template(
 		'student.html',
 		menuitem=menuitem,
-		props=current_app.config['Props'],
+		props=UserSettings(),
 		lijsten=sysls_o.get_lijsten_nicename(),
 		sysls=sysls_o.get(),
 		student=StudentJinja(student, Student.get_model()),
@@ -352,7 +355,7 @@ def single_new_get():
 
 @ep_studenten.post('/new/<int:id>')
 def single_new_post(id):
-	students_o = current_app.config['Students']
+	students_o = Students()
 	newstudent = crunch_student(Student.get_empty(), request.form)
 
 	# prefil
@@ -376,7 +379,7 @@ def single_new_post(id):
 
 @ep_studenten.post('/single/<int:id>')
 def single_edit_post(id):
-	students_o = current_app.config['Students']
+	students_o = Students()
 	student = students_o.get_by_id(id)
 	if student is None:
 		return redirect('/studenten/new')
@@ -400,7 +403,8 @@ def single_edit_post(id):
 
 @ep_studenten.post('/note/<int:id>')
 def note_new_post(id):
-	students_o = current_app.config['Students']
+	jus = UserSettings()
+	students_o = Students()
 	note = IOstuff.sanitize(request.form.get('note'))
 	if note == '':
 		return redirect(f"/studenten/single/{id}")
@@ -411,7 +415,7 @@ def note_new_post(id):
 	d = dict(
 		note=note,
 		created_ts=nu,
-		alias=current_app.config['Props'].alias(),
+		alias=jus.alias(),
 		done=0,
 	)
 	student['notes'].insert(0, d)
@@ -420,7 +424,7 @@ def note_new_post(id):
 
 @ep_studenten.post('/note/<int:id>/<int:noteid>')
 def note_post_done(id, noteid):
-	students_o = current_app.config['Students']
+	students_o = Students()
 	student = students_o.get_by_id(id)
 	index = -1
 	for i in range(len(student['notes'])):
@@ -449,7 +453,7 @@ def single_opendir(id):
 
 @ep_studenten.get('/import')
 def import_get():
-	sysls_o = current_app.config['Sysls']
+	sysls_o = Sysls()
 	preset = dict(
 		s_status = 10,
 		s_origin = 1,
@@ -470,7 +474,7 @@ def import_get():
 	return render_template(
 		'studenten-import.html',
 		menuitem=menuitem,
-		props=current_app.config['Props'],
+		props=UserSettings(),
 		sysls=sysls_o.get(),
 		preset=preset,
 		seps=list(seps.keys()),
@@ -538,7 +542,7 @@ def import_post():
 		else:
 			rows.append(StudentJinja(student, Student.get_model()))
 
-	students_o = current_app.config['Students']
+	students_o = Students()
 	if 'import' in request.form:
 		# importeren en door naar registraties
 		for newstudent in rows:
@@ -554,12 +558,12 @@ def import_post():
 			fix_student_dir(id, None, newstudent)
 		return redirect(f"/studenten/registratie")
 
-	sysls_o = current_app.config['Sysls']
+	sysls_o = Sysls()
 
 	return render_template(
 		'studenten-import.html',
 		menuitem=menuitem,
-		props=current_app.config['Props'],
+		props=UserSettings(),
 		sysls=sysls_o.get(),
 		seps=list(seps.keys()),
 		rows=rows,
@@ -569,7 +573,7 @@ def import_post():
 
 # =========== helpers ========
 def fix_student_dir(id: int, old: dict|None, current: dict):
-	students_o = current_app.config['Students']
+	students_o = Students()
 	# fixes problems with dirs, not delete = manual
 	if current is None:
 		return
@@ -612,7 +616,7 @@ def get_student_filter(s, sta):
 	return ''
 
 def from_sysl(veld, d: dict):
-	sysls_o = current_app.config['Sysls']
+	sysls_o = Sysls()
 	try:
 		return sysls_o.get_sysl_item(veld, d[veld])['name']
 	except:
@@ -626,7 +630,7 @@ def from_student(veld, d: dict):
 
 def create_mail(student, welk) -> dict:
 	# create confirm text
-	emails_o = current_app.config['Emails']
+	emails_o = Emails()
 	mail = emails_o.get_single(welk)
 	lang = from_sysl('s_lang', student)
 	if lang == 'nl':
@@ -670,7 +674,7 @@ def get_statussen():
 	)
 
 def filter_stuff():
-	students_o = current_app.config['Students']
+	students_o = Students()
 	statussen = get_statussen()
 	filters = ['registratie', 'studenten', 'beoordelen', 'alumni', 'niet', 'noshow', 'alle']
 	tellers = dict()
@@ -740,7 +744,7 @@ def defprint(student):
 		print(f'{key}: \t{val}')
 
 def get_studentmap_pad(id) -> str|None:
-	students_o = current_app.config['Students']
+	students_o = Students()
 	pad = students_o.make_student_folder_path(id)
 	if pad is None:
 		return None

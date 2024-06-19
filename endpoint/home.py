@@ -1,4 +1,6 @@
-from flask import current_app, Blueprint, render_template
+from flask import Blueprint, render_template
+
+from helpers.singletons import UserSettings, Students
 
 from endpoint.studenten import (
 	StudentJinja,
@@ -7,7 +9,7 @@ from endpoint.studenten import (
 # =============== endpoints =====================
 ep_home = Blueprint(
 	'ep_home', __name__,
-	url_prefix="/",
+	url_prefix="/home",
 	template_folder='templates',
     static_folder='static',
 	static_url_path='static',
@@ -17,7 +19,9 @@ menuitem = 'home'
 
 @ep_home.get('/')
 def home():
-	students_o = current_app.config['Students']
+
+	students_o = Students()
+	jus = UserSettings()
 
 	todos = list()
 	mijntodos = list()
@@ -26,9 +30,9 @@ def home():
 	for s in studenten.values():
 		for n in s['notes']:
 			if n['done'] == 0:
-				if n['alias'] == current_app.config['Props'].alias():
+				if n['alias'] == jus.alias():
 					mijntodos.append(StudentJinja(s, Student.get_model()))
-				elif current_app.config['Props'].magda(['admin']):
+				elif jus.magda(['admin']):
 					s['hun'] = n['alias']
 					huntodos.append(StudentJinja(s, Student.get_model()))
 				break
@@ -36,7 +40,7 @@ def home():
 	return render_template(
 		'home.html',
 		menuitem='home',
-		props=current_app.config['Props'],
+		props=jus,
 		mijntodos=mijntodos,
 		huntodos=huntodos,
 	)
