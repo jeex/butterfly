@@ -7,7 +7,7 @@
     </header>
     <main>
         {% if rows is not none %}
-            <div class="links" style="text-align: center; border-bottom: 1px solid var(--menu); padding-bottom: 0.5em;">
+            <div class="links" style="border-bottom: 1px solid var(--menu); padding-bottom: 0.5em;">
                 <table style=" margin-left: auto; margin-right: auto;">
                     <thead>
                         <tr>
@@ -137,7 +137,7 @@
             <div>
                 <p class="placeholders" style="margin-top: 1em;">
                     {% for v in preset['volgorde'] %}
-                        <span class="placeholder">{{ v }}</span>
+                        <span title="Click to put in first spot." class="placeholder">{{ v }}</span>
                     {% endfor %}
                 </p>
                 <p style="margin-top: 0.5em;">
@@ -159,6 +159,19 @@
         </form>
     </main>
 <script>
+    let replace_to_semic = function(){
+        // replaces chosen splitter by ;
+        let cursep = $('select[name="sep"]').val()
+        if(cursep === 'puntkomma'){
+            return;
+        }
+        if(cursep === 'tab'){
+            var t = $('textarea').val();
+            t = t.replaceAll('\t', ';')
+            $('textarea').val(t)
+        }
+    }
+
     let set_volgorde = function(){
         var lijst = [];
         $.each($('.placeholders span'), function(){
@@ -183,6 +196,7 @@
         // ajax form
         $('form.two-columns').on('submit', function(e){
             set_volgorde();
+            replace_to_semic();
         });
 
         $.each($('.check-email'), function(){

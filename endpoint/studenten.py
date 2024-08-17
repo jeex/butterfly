@@ -469,11 +469,10 @@ def import_get():
 		s_uni = 1,
 		s_program = 0,
 		sep = 'komma',
-		volgorde = ['firstname', 'lastname', 'email', 'nhls_code'],
+		volgorde = ['nhls_code', 'lastname', 'firstname', 'email'],
 		csv = '',
 	)
 	seps = dict(
-		komma = ',',
 		puntkomma = ';',
 		tab = '\t',
 	)
@@ -492,7 +491,6 @@ def import_post():
 	# this function translates form input into
 	# a correct import list of dicts
 	seps = dict(
-		komma = ',',
 		puntkomma = ';',
 		tab = '\t',
 	)
@@ -505,8 +503,6 @@ def import_post():
 			s_course = Casting.int_(request.form.get('s_course'), 0),
 			volgorde = request.form.get('placeholders').split(','),
 		)
-		d['csv'] = request.form.get('csv')
-		d['csv_lines'] = d['csv'].split('\r\n')
 	except Exception as e:
 		print(e)
 		return redirect('/studenten/import')
@@ -524,20 +520,31 @@ def import_post():
 	if 'sep' in request.form and 'sep' in seps.keys():
 		d['sep'] = request.form.get('sep').strip()
 	else:
-		d['sep'] = 'komma'
+		d['sep'] = 'puntkomma'
 	d['sep'] = seps[d['sep']]
+
+	try:
+		d['csv'] = request.form.get('csv')
+		d['csv_lines'] = d['csv'].split('\r\n')
+	except Exception as e:
+		print(e)
+		return redirect('/studenten/import')
 
 	rows = list()
 	for row in d['csv_lines']:
 		student = dict()
 		csv = row.split(d['sep'])
+
 		i = 0
 		for key in d['volgorde']:
 			try:
 				student[key] = csv[i].strip()
 			except:
 				student[key] = ''
+			if key == 'lastname':
+				student['lastname'] = student['lastname'].split(',')[0].strip()
 			i += 1
+
 		for key in d:
 			if not key.startswith('s_'):
 				continue

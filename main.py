@@ -181,6 +181,10 @@ def add_header(res):
 	res.cache_control.max_age = 0
 	return res
 
+@app.get('/')
+def index():
+	return redirect('home')
+
 from endpoint.home import ep_home
 app.register_blueprint(ep_home)
 

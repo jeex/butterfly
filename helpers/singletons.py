@@ -498,9 +498,13 @@ class Students(metaclass=StudentsMeta):
 			pass
 	def as_html(self, id):
 		sysls_o = Sysls()
-		# print(sys._getframe(1).f_code.co_name)
 		d = self.get_by_id(id)
+		if not isinstance(d, dict):
+			print('NO STUDENT DIR', d)
+			return
+
 		studfields = list(d.keys())
+		# get circular model from system
 		circfields = sysls_o.get_sysl('s_circular')
 
 		def ccolor(val: int):
@@ -534,27 +538,65 @@ class Students(metaclass=StudentsMeta):
 			except:
 				return f"{htm}\n\t\t\t<p><span></span></p>"
 
+		def make_custom(html):
+			customfields = dict() # of dicts
+			try:
+				for cus in d['customs'].values():
+					for k, v in cus.items():
+						customfields[k] = v
+			except:
+				pass
+
+			if len(customfields) == 0:
+				return html
+
+			# tabel
+			html = f'{html}\n\t\t\t<table class="circular">'
+			# rij met kolomnamen
+			html = f'{html}\n\t\t\t\t<tr>'
+			for k, v in customfields.items():
+				fieldname = k.replace('t_', '')
+				html = f'{html}\n\t\t\t\t\t<th style="text-align: left;">{fieldname}</th>'
+			html = f'{html}\n\t\t\t\t</tr>'
+
+			# rij met cellen
+			html = f'{html}\n\t\t\t\t<tr>'
+			for k, v in customfields.items():
+				html = f'{html}\n\t\t\t\t\t<td style="text-align: left;">{v}</td>'
+			# einde rij en tabel
+			html = f'{html}\n\t\t\t\t</tr>'
+			html = f'{html}\n\t\t\t</table>'
+			return html
+
 		def make_circular(html, circ):
 			views_o = Views()
 			# creates one line for one circular
 			view = views_o.get_single(circ)
+			if view is None:
+				return html
 
 			html = f'{html}\n\t\t\t<table class="circular">'
 			html = f'{html}\n\t\t\t\t<tr><th></th>'
 			for field in view['fields']:
 				if field in studfields:
 					continue
-				html = f'{html}\n\t\t\t\t\t<th>{field}</th>'
+				if not field.startswith('c_'):
+					continue
+				fieldname = field.replace('c_', '').replace('t_', '')
+				html = f'{html}\n\t\t\t\t\t<th>{fieldname}</th>'
 			html = f'{html}\n\t\t\t\t</tr>'
 
 			html = f'{html}\n\t\t\t\t<tr><td style="width: 100px;">{circ}</td>'
 			for field in view['fields']:
 				if field in studfields:
 					continue
+				if not field.startswith('c_'):
+					continue
 				if field in d['circulars'][circ]:
 					val = d['circulars'][circ][field]
 				else:
 					val = 0
+				# kleurveld
 				kleur = ccolor(val)
 				html = f'{html}\n\t\t\t\t\t<td style="background-color: {kleur}"></td>'
 
@@ -618,7 +660,11 @@ class Students(metaclass=StudentsMeta):
 		html = make_li(html, 'KOM-code', 'kom_code')
 		html = make_li(html, 'NHLS-code', 'nhls_code')
 
-		html = f'{html}\n\t\t</ul>\n\t\t<h2>Checks</h2>\n\t\t<div class="circulars">'
+		html = f'{html}\n\t\t</ul>\n\t\t<h2>Custom fields</h2>\n\t\t<div class="circulars">'
+		if 'customs' in d:
+			html = make_custom(html)
+
+		html = f'{html}\n\t\t</div>\n\t\t<h2>Checks</h2>\n\t\t<div class="customs">'
 		if 'circulars' in d:
 			for circ in d['circulars']:
 				html = make_circular(html, circ)
@@ -635,7 +681,6 @@ class Students(metaclass=StudentsMeta):
 		# print('HTML', filepath)
 		with open(filepath, 'w') as f:
 			f.write(html)
-
 
 	def basic_student_html(self):
 		return '''<!DOCTYPE html>
@@ -669,7 +714,8 @@ class Students(metaclass=StudentsMeta):
 	                font-size: 0.8em;
 	            }
 	            div.notes,
-	            div.circulars{
+	            div.circulars,
+	            div.customs{
 	                margin: 1em 0 0 0;
 	                border: 2px solid %s;
 					padding: 1em;

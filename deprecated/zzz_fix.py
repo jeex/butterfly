@@ -124,3 +124,16 @@ for id, val in all.items():
 
 	print(url)
 '''
+
+'''
+stuo = Students()
+all = stuo.all()
+for id, val in all.items():
+	if not 's_program' in val:
+		continue
+	if val['s_program'] == 87:
+		val['s_program'] = 32
+		stuo.make_student_pickle(id, val)
+		print()
+		ppp(val)
+'''

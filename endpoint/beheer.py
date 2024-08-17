@@ -18,16 +18,22 @@ ep_beheer = Blueprint(
 
 menuitem = 'beheer'
 
-@ep_beheer.get('/generate')
+@ep_beheer.get('/generate/all')
 def generate():
 	# generate all student folders (if not exist)
 	# generate all html files (overwrite)
+	#
+	print('hier')
 	students_o = Students()
-	for id in students_o.all():
-		students_o.as_html(id)
+	all = students_o.all()
+	if not isinstance(all, dict):
+		return redirect('/home')
+	for key in all.keys():
+		students_o.as_html(key)
 
 	# now open containing folder
 	pad = Mainroad.get_student_dirs_path()
+	Mainroad.loglog(f'\nGENERATED {pad}\n')
 	students_o.open_dir(pad)
 	return redirect('/home')
 
