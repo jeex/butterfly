@@ -1,6 +1,8 @@
+import sys
 from zzz_class_sqlite import Sqlite
 from datetime import date, datetime
 from helpers.general import Casting
+
 def get_status_model():
 	return {
 		0: '--',
@@ -11,8 +13,9 @@ def get_status_model():
 		16: 'no response',
 		18: 'no-show',
 		20: 'student',
-		21: 'resit',
-		22: 'extra',
+		21: 'grading',
+		22: 'resit',
+		23: 'extra',
 		30: 'quit',
 		31: 'na',
 		38: 'failed',
@@ -43,7 +46,7 @@ def get_student_model() -> dict:
 		s_term=7,
 		s_uni=9,
 		s_year=2024,
-		g_group=0,
+		s_group=0,
 	)
 
 def get_groep_model() -> dict:
@@ -55,7 +58,7 @@ def get_groep_model() -> dict:
 		status = 0,
 	)
 
-def create_status_table():
+def create_status_table(sqlitepad: str):
 	sql = '''
 	CREATE TABLE IF NOT EXISTS nw_status (
 	    id     INTEGER       PRIMARY KEY,
@@ -68,7 +71,7 @@ def create_status_table():
 	WITHOUT ROWID;
 '''
 	# db connection
-	sqlite = Sqlite()
+	sqlite = Sqlite(sqlitepad)
 	sqlite.create(sql)
 
 	sql = '''
@@ -80,8 +83,50 @@ def create_status_table():
 	for k, v in get_status_model().items():
 		sqlite.create(sql, (k, v))
 
-def autofill_year_table():
-	sqlite = Sqlite()
+def create_year_table(sqlitepad: str):
+	sql = '''
+	CREATE TABLE IF NOT EXISTS nw_year (
+	    id     INTEGER       PRIMARY KEY,
+	    name   VARCHAR (255),
+	    color  VARCHAR (255),
+	    extra  VARCHAR (255),
+	    status BOOLEAN       DEFAULT (true) 
+	)
+	WITHOUT ROWID;
+'''
+	sqlite = Sqlite(sqlitepad)
+	sqlite.create(sql)
+
+def create_circ_table(sqlitepad: str):
+	sql = '''
+	CREATE TABLE IF NOT EXISTS nw_circular (
+	    id     INTEGER       PRIMARY KEY,
+	    name   VARCHAR (255),
+	    color  VARCHAR (255),
+	    extra  VARCHAR (255),
+	    status BOOLEAN       DEFAULT (true) 
+	)
+	WITHOUT ROWID;
+'''
+	sqlite = Sqlite(sqlitepad)
+	sqlite.create(sql)
+
+def create_group_table(sqlitepad: str):
+	sql = '''
+	CREATE TABLE IF NOT EXISTS nw_group (
+	    id     INTEGER       PRIMARY KEY,
+	    name   VARCHAR (255),
+	    color  VARCHAR (255),
+	    extra  VARCHAR (255),
+	    status BOOLEAN       DEFAULT (true) 
+	)
+	WITHOUT ROWID;
+'''
+	sqlite = Sqlite(sqlitepad)
+	sqlite.create(sql)
+
+def autofill_year_table(sqlitepad: str):
+	sqlite = Sqlite(sqlitepad)
 	sql = '''
 		INSERT INTO
 			nw_year
@@ -95,7 +140,7 @@ def autofill_year_table():
 			status = 0
 		sqlite.create(sql, (y, str(y), status))
 
-def make_student_table():
+def make_student_table(sqlitepad: str):
 	sql = '''
 CREATE TABLE IF NOT EXISTS nw_student (
     id              INTEGER PRIMARY KEY,
@@ -119,9 +164,9 @@ CREATE TABLE IF NOT EXISTS nw_student (
     s_term          INTEGER,
     s_uni           INTEGER,
     s_year          INTEGER,
-    g_group         INTEGER);
+    s_group         INTEGER);
 '''
-	sqlite = Sqlite()
+	sqlite = Sqlite(sqlitepad)
 	sqlite.create(sql)
 
 # -------- conversie studenten ------------
@@ -150,7 +195,7 @@ def jaar_periode_2_ts(year: int, periode: int, plus4: bool) -> int:
 	return ts
 
 def conversie_lang(lang: str) -> int:
-	if lang == 'en':
+	if lang in ['en', 'EN']:
 		return 2
 	else:
 		return 1
@@ -246,7 +291,7 @@ def conversie_startperiode(startperiode: str, eentwee: int) -> int:
 			return 1
 		elif int(startperiode) in [3, 4]:
 			return 2
-	return 7
+	return int(startperiode)
 
 def conversie_naam(naam) -> (str, str):
 	nd = naam.split(' ')
@@ -282,6 +327,8 @@ def converteer_notes_per_student(dbcon: Sqlite, id: int) -> list:
 	return newnotes
 
 def converteer_student(dbcon: Sqlite, student: dict):
+	if student['status'] == 1:
+		return
 	fnaam, anaam = conversie_naam(student['naam'])
 	s_grade, grade_ts = conversie_grade_moment(student['grademomenten_ID'])
 	ec, stream = conversie_eentwee(student['eentwee_ID'])
@@ -300,7 +347,7 @@ def converteer_student(dbcon: Sqlite, student: dict):
 		firstname = fnaam,
 		lastname = anaam,
 		email = student['email'],
-		password = student['password'],
+		# password = student['password'],
 		created_ts = db_datetime_2_ts(student['aanmaak']),
 		todo = student['todo'],
 		pf_url = student['portfolio_URL'],
@@ -327,12 +374,11 @@ def converteer_student(dbcon: Sqlite, student: dict):
 	vals = [news[sub] for sub in news]
 	dbcon.create(sql, vals)
 
-def converteer_studenten():
-	sqlite = Sqlite()
+def converteer_studenten(sqlitepad: str):
+	sqlite = Sqlite(sqlitepad)
 	alle = sqlite.read("SELECT * FROM studenten")
 	for a in alle:
 		converteer_student(sqlite, a)
-# converteer_studenten()
 
 def converteer_groep(dbcon: Sqlite, groep: dict):
 	if groep['startperiode'] in [1, 2, 3, 4]:
@@ -346,40 +392,58 @@ def converteer_groep(dbcon: Sqlite, groep: dict):
 	else:
 		lang = 3
 
-	extra = f"oud – [year: {groep['startjaar']}] [period: {term}] [lang: {lang}]"
+	if groep['ID'] < 1050:
+		extra = f"oud – [year: {groep['startjaar']}] [period: {term}] [lang: {lang}]"
+		status = 0
+	else:
+		extra = ''
+		status = 1
 
 	newg = dict(
 		id = groep['ID'],
 		name = groep['naam'],
 		color = groep['kleur'],
 		extra = extra,
-		status = 0,
+		status = status,
 	)
 	sql = """
-	INSERT INTO nw_groep
+	INSERT INTO nw_group
 	VALUES (?, ?, ?, ?, ?)
 	"""
 	vals = [newg[sub] for sub in newg]
 	dbcon.create(sql, vals)
 
-def converteer_groepen():
-	sqlite = Sqlite()
+def converteer_groepen(sqlitepad: str):
+	sqlite = Sqlite(sqlitepad)
 	alle = sqlite.read("SELECT * FROM groepen")
 	for a in alle:
 		converteer_groep(sqlite, a)
 
-# converteer_groepen()
+# oude _DATABASE OMZETTEN VAN OUDE NAAR NIEUWE STRUCTUUR
+sqlitepad = "cpnits27.sqlite"
+# create_status_table(sqlitepad)
+# create_year_table(sqlitepad)
+# autofill_year_table(sqlitepad)
+# create_groep_table(sqlitepad)
+# create_circ_table(sqlitepad)
+# make_student_table(sqlitepad)
+# converteer_studenten(sqlitepad)
+# converteer_groepen(sqlitepad)
+# sys.exit('Klaar met fase 1')
 
-# NU IS DE oude _DATABASE OMGEZET VAN OUDE NAAR NIEUWE STRUCTUUR
 # VANAF HIER KAN DIT WORDEN OMGEZET IN PICKLES
 
-from helpers.globalclasses import Sysls, Groups, Students
 
-def nw_db_2_systempickles():
-	sqlite = Sqlite()
-	slijst = Sysls._sysls
+from helpers.singletons import Sysls, Students
+
+def nw_db_2_systempickles(sqlitepad: str):
+	sqlite = Sqlite(sqlitepad)
+	sy = Sysls()
+	slijst = sy._sysls
 
 	for syslname in slijst:
+		if syslname != 's_group':
+			continue
 		nw = syslname.replace('s_', 'nw_')
 		sql = f"SELECT * FROM {nw}"
 		alle = sqlite.read(sql)
@@ -387,37 +451,40 @@ def nw_db_2_systempickles():
 		for a in alle:
 			a['ordering'] = 0
 			ad[a['id']] = a
-		Sysls.make_sysl(syslname, ad)
+		sy.make_sysl(syslname, ad)
 
-# nw_db_2_systempickles()
-
-def nw_db_2_groepen():
-	sqlite = Sqlite()
-	alle = sqlite.read("SELECT * FROM nw_group")
-	for a in alle:
-		id = int(a['id'])
-		Groups.make_group(id, a)
-
-# nw_db_2_groepen()
+# nw_db_2_systempickles(sqlitepad)
+# sys.exit('Klaar met fase 2')
 
 
-
-
-
-def nw_db_2_students():
-	sqlite = Sqlite()
+def nw_db_2_students(sqlitepad: str):
+	sqlite = Sqlite(sqlitepad)
 	studenten = sqlite.read("SELECT * FROM nw_student")
+	stu = Students()
 	for s in studenten:
 		id = s['id']
 		try:
 			s['notes'] = converteer_notes_per_student(sqlite, id)
 		except:
 			s['notes'] = []
-		Students.make_student_pickle(id, s)
-		Students.make_student_folder(id)
+		stu.make_student_pickle(id, s)
+		stu.make_student_folder(id)
+		# stu.as_html(id)
 
-# nw_db_2_students()
+# nw_db_2_students(sqlitepad)
+# sys.exit('Klaar met fase 3')
 
+
+def stud_pickles_2_html(sqlitepad: str):
+	sqlite = Sqlite(sqlitepad)
+	studenten = sqlite.read("SELECT * FROM nw_student")
+	stu = Students()
+	for s in studenten:
+		id = s['id']
+		stu.as_html(id)
+
+# stud_pickles_2_html(sqlitepad)
+# sys.exit('Klaar met fase 4')
 
 # ======== HET ENIGE WAT MOET GEBEUREN BIJ
 # ======== LAATSTE RUN MET NIEUWE STUDENTEN ======
@@ -429,5 +496,5 @@ converteer_studenten() # gebeurt binnen sqlite
 nw_db_2_students()'''
 
 
-# IMP: program 87 moet 32 worden, zit er dubbel in
+# IMP: program 87 moet 32 worden, zit er dubbel in VERWIJDER UIT butterfly
 # bij pf_url, split op # en dan rest laten vervallen

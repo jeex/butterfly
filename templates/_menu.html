@@ -1,33 +1,43 @@
 <header>
     <menu id="mainmenu">
         <ul>
-            <li class="{{ 'actief'|safe if menuitem == 'home' }}"><a href="/">home</a></li>
-            <li class="{{ 'actief'|safe if menuitem == 'studenten' }}"><a href="/studenten">studenten</a></li>
-
-            {% if props.magda(['docent', 'beheer']) %}
-            <li class="{{ 'actief'|safe if menuitem == 'groepen' }}"><a href="/groepen">groepen</a></li>
+            {% if props._is() %}
+            <li class="{{ 'actief'|safe if menuitem == 'home' }}"><a href="/home">home</a></li>
             {% endif %}
 
-            {% if props.magda(['docent', 'beheer']) %}
+            {% if props.magda(['beheer', 'administratie', 'admin']) %}
+            <li class="{{ 'actief'|safe if menuitem == 'studenten' }}"><a href="/studenten">students</a></li>
+            {% endif %}
+
+            {% if props.magda(['docent', 'beheer', 'admin']) %}
+            <li class="{{ 'actief'|safe if menuitem == 'groepen' }}"><a href="/groepen">groups</a></li>
+            {% endif %}
+
+            {% if props.magda(['docent', 'beheer', 'admin']) %}
             <li class="{{ 'actief'|safe if menuitem == 'views' }}"><a href="/views">Views</a></li>
             {% endif %}
 
-            {% if props.magda(['beheer']) %}
+            {% if False and props.magda(['docent', 'beheer', 'admin']) %}
+            <li class="{{ 'actief'|safe if menuitem == 'hunts' }}"><a href="/hunts">Hunts</a></li>
+            {% endif %}
+
+            {% if props.magda(['admin']) %}
             <li class="{{ 'actief'|safe if menuitem == 'emails' }}"><a href="/emails">emails</a></li>
             {% endif %}
 
-            {% if props.magda(['beheer']) %}
-                <li class="{{ 'actief'|safe if menuitem == 'beheer' }}"><a href="/beheer">beheer</a></li>
+            {% if props.magda(['admin']) %}
+                <li class="{{ 'actief'|safe if menuitem == 'beheer' }}"><a href="/beheer">manage</a></li>
             {% endif %}
 
-            {% if props.magda(['beheer']) %}
+            {% if props.magda(['beheer', 'admin']) %}
                 <li class="{{ 'actief'|safe if menuitem == 'website' }}"><a href="/website">cpnits.com</a></li>
             {% endif %}
+
         </ul>
         {% if menuitem in ['studenten', 'groepen'] %}
             <form name="menu-zoek" style="margin-left: 0.25em;" action="/studenten/zoek" method="get">
-                <input style="height: 2.1em; padding: 0 0.5em;" type="text" name="s" value="" placeholder="Zoek op naam">
-                <input style="height: 2.4em;" type="submit" name="go" value="Zoek">
+                <input style="height: 2.1em; padding: 0 0.5em;" type="text" name="s" value="" placeholder="Search by name">
+                <input style="height: 2.4em;" type="submit" name="go" value="Search">
             </form>
         {% endif %}
         <script>

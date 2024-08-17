@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="1.0">
+  <head>
+    <title>nhls-butterfly</title>
+    <dateCreated>2024-06-20 09:18:46 +0200</dateCreated>
+  </head>
+  <body>
+    <outline text="Shape">
+      <outline text="BUTTERFLY DOCENT"/>
+      <outline text="login niet nodig, want desktop app"/>
+      <outline text="open vensters op props"/>
+      <outline text="start view"/>
+      <outline text="elk pad…"/>
+      <outline text="afsluiten…"/>
+      <outline text="extern pad"/>
+      <outline text="externe browser"/>
+      <outline text="vraag od path, preset van od-props"/>
+      <outline text="ophalen settings settingslocatie pc"/>
+      <outline text="laatste plek in props"/>
+      <outline text="opslaan od-props = studentmappen"/>
+      <outline text="venster props"/>
+      <outline text="od-props = studentmappen"/>
+      <outline text="laatste plek props"/>
+      <outline text="door naar laatste plek = url"/>
+      <outline text="class Props is een globale static class. Import in Blueprint met from globalstuff import Props"/>
+      <outline text="BTN Remove Settings"/>
+    </outline>
+    <outline text="Shape 1">
+      <outline text="OneDrive DIRS"/>
+      <outline text="JAREN"/>
+      <outline text="2024"/>
+      <outline text="p1 (en 2 3 4)"/>
+      <outline text="student-naam"/>
+      <outline text="student-naam.html = data leesbaar"/>
+      <outline text="portfolio, fp en andere docs"/>
+      <outline text="Rooster"/>
+      <outline text="Planning"/>
+      <outline text="Moduleboek, etc"/>
+      <outline text="s1 (en 2)"/>
+      <outline text="student-naam"/>
+      <outline text="etc…"/>
+      <outline text="lesmateriaal"/>
+      <outline text="overig"/>
+      <outline text="_DATABASE"/>
+      <outline text="system"/>
+      <outline text="SYSTEEM-PICKLES"/>
+      <outline text="groups"/>
+      <outline text="GROUP PICKLE (s) bevat alle data van één groep"/>
+      <outline text="students"/>
+      <outline text="STUDENT-PICKLE (s) bevat alle data van één student&#10;&#10;INCL de tasks die de student moet doen."/>
+      <outline text="tasks"/>
+      <outline text="TASK-PICKLE (s) bevat alle data van één task"/>
+    </outline>
+    <outline text="Shape 2">
+      <outline text="STUDENTEN IN LIJSTEN"/>
+      <outline text="status &#10;groep &#10;naam, &#10;nr, &#10;notes &#10;ec, &#10;taal"/>
+      <outline text="grading lijst"/>
+      <outline text="data: herkomst, email, etc"/>
+      <outline text="checks docent LIJST PER GROEP"/>
+      <outline text="LIJST acties&#10;Zoeken&#10;Sorteren&#10;Filteren"/>
+      <outline text="STUDENT acties:&#10;vakje g/r/o/n&#10;notitie&#10;cijfer invullen&#10;naar map in OneDrive"/>
+      <outline text="Selecteren"/>
+    </outline>
+    <outline text="Shape 3">
+      <outline text="STUDENT SINGLE"/>
+      <outline text="data"/>
+      <outline text="CRUD"/>
+      <outline text="grading"/>
+      <outline text="pf-url,pf-ok, fp-ok, m. ass., cijfer, progress."/>
+      <outline text="beschrijving final project"/>
+      <outline text="notes —&gt; timestamp, note, todo"/>
+      <outline text="DIR bijwerken"/>
+    </outline>
+    <outline text="Shape 4">
+      <outline text="SYSTEEM PRESETS"/>
+      <outline text="course"/>
+      <outline text="stream"/>
+      <outline text="id"/>
+      <outline text="ec"/>
+      <outline text="lang"/>
+      <outline text="name"/>
+      <outline text="users"/>
+      <outline text="color"/>
+      <outline text="status"/>
+      <outline text="active/passive"/>
+      <outline text="origin"/>
+      <outline text="ordering"/>
+      <outline text="institute"/>
+      <outline text="extra"/>
+      <outline text="program"/>
+      <outline text="year"/>
+    </outline>
+    <outline text="Shape 5">
+      <outline text="CLASSES"/>
+      <outline text="PROPS"/>
+      <outline text="STUDENT"/>
+      <outline text="GROUP"/>
+      <outline text="PRESET"/>
+      <outline text="PICKLES"/>
+      <outline text="TIMETOOLS"/>
+      <outline text="DIRPATHS"/>
+      <outline text="CASTING"/>
+      <outline text="EXPORT"/>
+    </outline>
+    <outline text="Shape 6">
+      <outline text="GROEP SINGLE"/>
+      <outline text="naam, kleur, docent, status"/>
+      <outline text="CRUD"/>
+      <outline text="LIJSTEN "/>
+      <outline text="grading"/>
+      <outline text="acties docent: weeknr"/>
+      <outline text="ACTIES KOPIEREN VAN ANDERE GROEP"/>
+    </outline>
+    <outline text="Shape 7">
+      <outline text="GRADING"/>
+      <outline text="pf url"/>
+      <outline text="pf ok"/>
+      <outline text="fp ok"/>
+      <outline text="fp in"/>
+      <outline text="fp idee"/>
+      <outline text="g/o/r/n"/>
+      <outline text="hunt1 ok"/>
+      <outline text="hunt2 ok"/>
+      <outline text="opdr 0.1, opdr 0.2, opdr 1.1  etc."/>
+      <outline text="input"/>
+      <outline text="cijfer"/>
+      <outline text="progress ok"/>
+    </outline>
+    <outline text="Shape 8">
+      <outline text="JAREN dirs bijwerken"/>
+      <outline text="ACTIES"/>
+      <outline text="naar status"/>
+      <outline text="import uit excel Joke"/>
+      <outline text="naar groep"/>
+      <outline text="export als csv"/>
+      <outline text="groep en studenten exporteren tbv BB"/>
+      <outline text="exporteren tbv Progress cijferlijst"/>
+    </outline>
+  </body>
+</opml>

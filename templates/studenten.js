@@ -82,11 +82,12 @@ let tabel2csv = function(header) {
         var komma = '';
         $.each($('thead th'), function () {
             if (eerste) {
+                // skip checkbox field
                 eerste = false;
             } else {
                 $(this).find('span').html(''); // pijltje eruit
                 csvtext += komma + $(this).text();
-                komma = ',';
+                komma = ';';
             }
         });
         csvtext += "\n";
@@ -101,14 +102,26 @@ let tabel2csv = function(header) {
             komma = '';
             $.each(rij.find('td'), function () {
                 if (eerste) {
+                    // skip checkbox field
                     eerste = false;
                 } else {
-                    if($(this).data('csv')){
-                        nietnul = true;
-                        let t = $(this).data('csv');
+                    nietnul = true;
+                    let t = $(this).data('csv');
+                    if($(this).hasClass('circular')){
+                        console.log($(this).data('cirval'))
+                        if(t === 0){
+                            csvtext += komma + '';
+                        }else if(t === 1){
+                            csvtext += komma + 'green';
+                        }else if(t === 2){
+                            csvtext += komma + 'orange';
+                        }else if(t === 3){
+                            csvtext += komma + 'red';
+                        }
+                    }else{
                         csvtext += komma + t;
-                        komma = ',';
                     }
+                    komma = ';';
                 }
             })
             csvtext += "\n";
@@ -325,7 +338,7 @@ $(function(){
     })
     $('input[name="to-csv"]').on('click', function(e) {
         e.preventDefault();
-        tabel2csv(header=false)
+        tabel2csv(header=true)
     });
 
     $('input[name="to-excel"]').on('click', function(e) {

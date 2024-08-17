@@ -22,6 +22,11 @@
                         <li class="{{ 'actief'|safe if thing == syslname }}"><a href="/beheer/{{ thing }}">{{ lijsten[thing] }}</a></li>
                     {% endif %}
                 {% endfor %}
+
+                {% if props.magda(['admin']) %}
+                    <li style="width: 2px; height: 2em; padding: 0; background-color: black; margin-left: 0.25em;"></li>
+                    <li style="background-color: red; color: white;"><a href="/beheer/generate{{ thing }}">generate</a></li>
+                {% endif %}
             </ul>
         </menu>
     </header>

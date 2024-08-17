@@ -9,7 +9,7 @@
                     <li class="actief">{{ zoekterm }}</li>
                 {% endif %}
                 {% for thing in filters %}
-                    <li class="{{ 'actief'|safe if thing == filter }}"><a href="/studenten/{{ thing }}">{{ thing }} [{{ tellers[thing] }}]</a></li>
+                    <li class="{{ 'actief'|safe if thing == filter }}"><a href="/studenten/{{ thing }}">{{ thing|filtername }} [{{ tellers[thing] }}]</a></li>
                 {% endfor %}
             </ul>
         </menu>
@@ -17,8 +17,8 @@
     <main>
         {% if filter == 'registratie' and props.magda(['administratie', 'beheer']) %}
             <div class="links topcenter">
-                <a style="background-color: var(--menu); color: black;" class="asbutton" href="/studenten/new">nieuwe student</a>
-                <a style="background-color: dodgerblue; color: white;" class="asbutton" href="/studenten/import">import lijst Joke</a>
+                <a style="background-color: var(--menu); color: black;" class="asbutton" href="/studenten/new">new student</a>
+                <a style="background-color: dodgerblue; color: white;" class="asbutton" href="/studenten/import">import list JB</a>
             </div>
         {% endif %}
         <table class="links">
@@ -26,27 +26,27 @@
                 <tr>
                     <th class="no-sort"><input type="checkbox" name="add" value="all"></th>
                     <th class="smal" id="id"><span>&uarr;</span>id</th>
-                    <th id="s_group"><span></span>groep</th>
-                    <th id="firstname"><span></span>v.naam</th>
-                    <th id="lastname"><span></span>a.naam</th>
+                    <th id="s_group"><span></span>group</th>
+                    <th id="firstname"><span></span>f. name</th>
+                    <th id="lastname"><span></span>s.name</th>
                     <th id="email"><span></span>email</th>
-                    <th class="smal" id="s_gender"><span></span>mvo</th>
+                    <th class="smal" id="s_gender"><span></span>&#9893;</th>
                     <th class="smal" id="pf_url"><span></span>pf</th>
                     <th id="s_status"><span></span>status</th>
 
-                    <th class="smal" id="grade"><span></span>cijfer</th>
-                    <th id="grade_ts"><span></span>d.d.</th>
+                    <th class="smal" id="grade"><span></span>grade</th>
+                    <th id="grade_ts"><span></span>per</th>
 
-                    <th id="s_year"><span></span>jaar</th>
+                    <th id="s_year"><span></span>year</th>
                     <th id="s_term"><span></span>p</th>
                     <th class="smal" id="s_ec"><span></span>ecs</th>
-                    <th class="smal" id="s_lang"><span></span>taal</th>
+                    <th class="smal" id="s_lang"><span></span>lang</th>
                     <th id="s_course"><span></span>minor</th>
-                    <th id="s_stream"><span></span>stroom</th>
-                    <th id="s_origin"><span></span>herkomst</th>
-                    <th id="s_uni"><span></span>instituut</th>
-                    <th id="s_program"><span></span>opleiding</th>
-                    <th id="created_ts"><span></span>aanmaak</th>
+                    <th id="s_stream"><span></span>stream</th>
+                    <th id="s_origin"><span></span>origin</th>
+                    <th id="s_uni"><span></span>institute</th>
+                    <th id="s_program"><span></span>program</th>
+                    <th id="created_ts"><span></span>created</th>
                 </tr>
             </thead>
             <tbody>
@@ -64,7 +64,7 @@
                     <td class="dblignore" data-csv="{{ s._try('email') }}" data-th="email">{{ s._try('email') }}</td>
 
                     {% set item = s._s_item('s_gender') %}
-                    <td data-csv="{{ item['name']|nbsp|safe }}" class="smal" data-th="s_gender" data-idnr="{{ item['id'] }}" style="background-color: {{ item['color'] }};">{{ item['name']|nbsp|safe }}</td>
+                    <td data-csv="{{ item['name']|nbsp|safe }}" class="smal" data-th="s_gender" data-idnr="{{ item['id'] }}" style="background-color: {{ item['color'] }};">{{ item['name']|gender|safe }}</td>
 
                     <td class="dblignore" data-csv="{{ s._try('pf_url') }}" class="smal" data-th="pf_url">{% if s._try('pf_url') != '' %}<a class="asbutton" href="{{ s._try('pf_url') }}" target="_blank">&rarr;</a>{% else %}&nbsp;{% endif %}</td>
 

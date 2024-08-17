@@ -21,7 +21,7 @@ class Window:
 
 		self.venster = webview.create_window(
 			self._title,
-			url=app,
+			app,
 			x=self._wprops[0],
 			y=self._wprops[1],
 			width=self._wprops[2],
@@ -38,9 +38,10 @@ class Window:
 		self.venster.events.moved += self.on_venster_props
 		self.venster.events.maximized += self.on_venster_props
 		self.venster.events.minimized += self.on_venster_props
-		self.venster.events.loaded += self.on_loaded
 
-		'''webview.events.closed += on_closed
+		'''
+		self.venster.events.loaded += self.on_loaded
+		webview.events.closed += on_closed
 		webview.events.shown += on_shown
 		webview.events.loaded += on_loaded'''
 

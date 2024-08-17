@@ -14,7 +14,7 @@
     </header>
     <main>
         <div class="links topcenter" style="">
-            Beschikbare placeholders:
+            Available placeholders:
                 {% for m in placeholders %}
                     <span title="Klik en kopieer" class="placeholder">&#123;{{ m }}&#125;</span>,
                 {% endfor %}
@@ -22,7 +22,7 @@
         </div>
         <form class="single-form" method="post" action="/emails/{{ mail._try('name') }}">
             <p>
-                <label><strong>NL</strong> onderwerp</label>
+                <label><strong>NL</strong> subject</label>
                 <input style="width: 400px;" type="text" name="nl_subject" value="{{ mail._try('nl_subject') }}">
             </p>
             <p>
@@ -48,7 +48,7 @@
             </p>
             <p>
                 <label>&nbsp</label>
-                <input type="submit" name="save" value="Opslaan">
+                <input type="submit" name="save" value="Save">
             </p>
         </form>
     </main>

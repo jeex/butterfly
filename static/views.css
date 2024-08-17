@@ -46,7 +46,7 @@ td{
 }
 .single-form label{
     display: inline-block;
-    width: 10em;
+    width: 11em;
     text-align: right;
     margin-right: 0.5em;
     padding: 0.25em 0.5em;
@@ -137,4 +137,10 @@ h2:not(:first-of-type){
 }
 .fixedfield{
     background-color: #eee;
+}
+.cirfield{
+    background-color: lightgreen;
+}
+.cusfield{
+    background-color: snow;
 }

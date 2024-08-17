@@ -1,11 +1,11 @@
-from flask import Flask, redirect, request
+from flask import Flask, redirect, request, render_template
 import logging
 
 from helpers.general import Casting, Timetools, Mainroad
 from helpers.window import Window
 from helpers.singletons import UserSettings, Sysls
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 app.config['DEBUG'] = True
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SECRET_KEY'] = 'nq023489cnJGH#F!'
@@ -25,23 +25,43 @@ app.config['initialized'] = False
 app.url_map.strict_slashes = False
 
 log = logging.getLogger('werkzeug')
-log.setLevel(logging.WARNING)
+log.setLevel(logging.ERROR)
 
 if not app.config['initialized']:
 	Mainroad.set_new_onedrive()
 	app.config['initialized'] = True
 
-@app.get('/')
-def index():
-	return redirect('/home')
-
 # ============= JINJA FILTERS =============
+@app.template_filter('filtername')
+def filtername(name):
+	fnames = {
+		'registratie': 'register',
+		'studenten': 'students',
+		'beoordelen': 'grading',
+		'alumni': 'alumni',
+		'niet': 'not',
+		'noshow': 'noshow',
+		'alle': 'all'
+	}
+	if name in fnames.keys():
+		return fnames[name]
+	return name
+
+@app.template_filter('gender')
+def gender(name):
+	if name.lower() in ['m']:
+		return '&#9794;'
+	elif name.lower() in ['v', 'f']:
+		return '&#9792;'
+	else:
+		return '&#9893;'
+
 @app.template_filter('initials')
 def initials(name):
 	name = name.split(' ')
 	eruit = ''
 	for n in name:
-		eruit = f"{eruit}{n[0].upper()}"
+		eruit = f"{eruit}{n.upper()}"
 	return eruit
 
 @app.template_filter('circ')
@@ -115,6 +135,8 @@ def asdatetime(i):
 
 @app.errorhandler(Exception)
 def handle_error(e):
+	Mainroad.loglog(f"error {e}")
+	Mainroad.loglog(f"\t{request.full_path}")
 	jus = UserSettings()
 	jus.set_prop('last_url', '')
 	return redirect('/home')
@@ -122,16 +144,16 @@ def handle_error(e):
 
 @app.before_request
 def before_request():
+	rp = request.full_path
+	if '/static/' in rp or '/favicon.ico' in rp:
+		return
 	jus = UserSettings()
 
 	# print('Before request', request.path)
 	# handling the first request, restarting where we left of
-	rp = request.full_path
-	if rp.endswith('?'):
-		rp = rp[:-1]
+	rp = rp.rstrip('?')
+	rp = rp.rstrip('/')
 
-	if 'static' in rp:
-		return
 	if jus.is_new():
 		jus._started = False
 		lasturl = jus.get_prop('last_url', default='/home')
@@ -171,6 +193,9 @@ app.register_blueprint(ep_groepen)
 from endpoint.views import ep_views
 app.register_blueprint(ep_views)
 
+# from endpoint.hunts import ep_hunts
+# app.register_blueprint(ep_hunts)
+
 from endpoint.emails import ep_email
 app.register_blueprint(ep_email)
 
@@ -180,10 +205,11 @@ app.register_blueprint(ep_beheer)
 from endpoint.website import ep_website
 app.register_blueprint(ep_website)
 
-if False and __name__ == '__main__':
-	app.run()
+
+if False:
+	app.run(port=5000)
 else:
 	Window(app)
 
 
-# pyinstaller -F -w --icon=cpnits-picto.ico --name Butterfly main.py
+# pyinstaller -F -w --noconfirm --clean --add-data templates:templates --add-data static:static --icon=cpnits-picto.ico --name Butterfly main.py

@@ -1,8 +1,5 @@
-# ppp kan weg
 import re
 import os
-import platform
-import subprocess
 from copy import deepcopy
 
 from flask import redirect, request, Blueprint, render_template
@@ -50,25 +47,28 @@ class Student(BaseClass):
 
 			# list of soc's on this student
 			circulars = {'default': {}, 'model': 'm_setofcirculars'},
+
+			# list of custom text fields
+			customs = {'default': {}, 'model': 'm_custom'},
 		)
 
 	@classmethod
 	def get_nicename(cls, key: str) -> str:
 		nicenames = dict(
-			s_group='groep',
+			s_group='group',
 			s_status='status',
-			s_year='jaar',
-			s_term='periode',
+			s_year='year',
+			s_term='period',
 			s_ec='ecs',
-			s_lang='taal',
+			s_lang='lang',
 			s_course='minor',
-			s_stream='stroom',
-			s_origin='herkomst',
-			s_uni='instituut',
-			s_program='opleiding',
-			created_ts='aanmaak',
+			s_stream='stream',
+			s_origin='origin',
+			s_uni='institute',
+			s_program='program',
+			created_ts='created',
 			grade_ts='dd',
-			s_gender='mvo',
+			s_gender='mfo',
 		)
 		if key in nicenames:
 			return nicenames[key]
@@ -159,6 +159,13 @@ class  StudentJinja(JINJAstuff):
 		except:
 			return 0
 
+	def _custom(self, vname: str, cname: str) -> str:
+		try:
+			custom = self.record['customs'][vname][cname]
+			return custom
+		except:
+			return ''
+
 # =============== ENDPOINTS =====================
 ep_studenten = Blueprint(
 	'ep_studenten', __name__,
@@ -183,6 +190,7 @@ def studenten(filter):
 		return redirect('/studenten/studenten')
 
 	all = students_o.all_as_lod()
+
 	students = list()
 	tellers = dict()
 	for s in all:
@@ -310,10 +318,10 @@ def single_get(id):
 		invite = create_mail(student, 'confirm')
 
 	grade = None
-	if student['grade_ts'] > 0:
+	if student['s_status'] == 21:
 		grade = create_mail(student, 'grade')
 
-	studentmappad = get_studentmap_pad(id)
+	pad = students_o.make_student_folder_path(id)
 	sysls_o = Sysls()
 
 	return render_template(
@@ -326,7 +334,7 @@ def single_get(id):
 		nieuw=False,
 		invite=invite,
 		grade=grade,
-		studmappad=studentmappad,
+		studmappad=pad,
 	)
 
 @ep_studenten.get('/new')
@@ -372,8 +380,7 @@ def single_new_post(id):
 	# make student dir
 	fix_student_dir(id, None, newstudent)
 	# show student dir
-	pad = students_o.make_student_folder_path(id)
-	opendir(pad)
+	students_o.open_student_dir(id)
 
 	return redirect(f"/studenten/single/{id}")
 
@@ -395,8 +402,7 @@ def single_edit_post(id):
 
 	elif 'delete' in request.form:
 		# on delete show student folder
-		pad = students_o.make_student_folder_path(id)
-		opendir(pad)
+		students_o.open_student_dir(id)
 		students_o.delete_student_pickle(id)
 
 	return redirect(f"/studenten/registratie")
@@ -405,7 +411,8 @@ def single_edit_post(id):
 def note_new_post(id):
 	jus = UserSettings()
 	students_o = Students()
-	note = IOstuff.sanitize(request.form.get('note'))
+
+	note = request.form.get('note').replace('\r\n', '<br>')
 	if note == '':
 		return redirect(f"/studenten/single/{id}")
 
@@ -446,9 +453,8 @@ def note_post_done(id, noteid):
 
 @ep_studenten.get('/opendir/<int:id>')
 def single_opendir(id):
-	pad = get_studentmap_pad(id)
-	if not pad is None:
-		opendir(pad)
+	students_o = Students()
+	students_o.open_student_dir(id)
 	return redirect(f"/studenten/single/{id}")
 
 @ep_studenten.get('/import')
@@ -600,7 +606,7 @@ def fix_student_dir(id: int, old: dict|None, current: dict):
 		else:
 			students_o.make_student_folder(id)
 			students_o.as_html(id)
-			opendir(curpath)
+			students_o.open_student_dir(id)
 		return
 
 	else:
@@ -652,13 +658,13 @@ def create_mail(student, welk) -> dict:
 		subject=subject,
 	)
 	email['text'] = text.format(
-		naam=email['naam'],
+		name=email['naam'],
 		minor=email['minor'],
-		periode=email['periode'],
-		jaar=email['jaar'],
+		period=email['periode'],
+		year=email['jaar'],
 		ec=email['ec'],
-		cijfer=email['cijfer'],
-		wachtwoord=email['wachtwoord']
+		grade=round(email['cijfer'] / 10.0, 0),
+		password=email['wachtwoord']
 	)
 	return email
 
@@ -677,6 +683,7 @@ def filter_stuff():
 	students_o = Students()
 	statussen = get_statussen()
 	filters = ['registratie', 'studenten', 'beoordelen', 'alumni', 'niet', 'noshow', 'alle']
+	# behoort bij het main filter filternames()
 	tellers = dict()
 	all = students_o.all_as_lod()
 	for s in all:
@@ -736,32 +743,5 @@ def crunch_student(s, req):
 	# merged and normalized
 	return newstudent
 
-def defprint(student):
-	print()
-	for key, val in student.items():
-		if key == 'notes':
-			continue
-		print(f'{key}: \t{val}')
-
-def get_studentmap_pad(id) -> str|None:
-	students_o = Students()
-	pad = students_o.make_student_folder_path(id)
-	if pad is None:
-		return None
-	if os.path.exists(pad):
-		return pad
-	else:
-		return None
-
-def opendir(pad):
-	try:
-		if platform.system() == "Windows":
-			os.startfile(pad)
-		elif platform.system() == "Darwin":
-			subprocess.Popen(["open", pad])
-		else:
-			subprocess.Popen(["xdg-open", pad])
-	except Exception as e:
-		pass
 
 # en verder

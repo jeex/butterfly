@@ -2,7 +2,10 @@ import os, sys, shutil
 import random
 import string
 from copy import deepcopy
+import platform
+import subprocess
 from collections import OrderedDict
+from pprint import pprint as ppp
 
 from helpers.general import (
 	Casting,
@@ -48,8 +51,8 @@ class Sysls(metaclass=SyslsMeta):
 		self.init()
 
 	def init(self):
-		self._systempath = os.path.join(Mainroad.get_onedrive_path(), '_DATABASE', 'system')
-
+		self._systempath = Mainroad.get_system_path()
+		# print(self._systempath)
 		self._sysmem = dict()
 		for syslname in self._sysls:
 			d = Pickles.read(os.path.join(self._systempath, f"{syslname}.pickle"))
@@ -187,7 +190,7 @@ class Emails(metaclass=EmailsMeta):
 		self.init()
 
 	def init(self):
-		self._emailspath = os.path.join(Mainroad.get_onedrive_path(), '_DATABASE', 'emails')
+		self._emailspath = Mainroad.get_emails_path()
 		self._sysmem = dict()
 		if not os.path.isdir(self._emailspath):
 			os.mkdir(self._emailspath)
@@ -249,7 +252,7 @@ class Views(metaclass=ViewsMeta):
 		)
 
 	def init(self):
-		self._viewspath = os.path.join(Mainroad.get_onedrive_path(), '_DATABASE', 'views')
+		self._viewspath = Mainroad.get_views_path()
 		self._sysmem = dict()
 		if not os.path.isdir(self._viewspath):
 			os.mkdir(self._viewspath)
@@ -333,8 +336,8 @@ class Students(metaclass=StudentsMeta):
 		self.init()
 
 	def init(self):
-		self._stud_p_path = os.path.join(Mainroad.get_onedrive_path(), '_DATABASE', 'students')
-		self._stud_dir_path = os.path.join(Mainroad.get_onedrive_path(), 'JAREN')
+		self._stud_p_path = Mainroad.get_studentpickles_path()
+		self._stud_dir_path = Mainroad.get_student_dirs_path()
 		self._sysmem = dict()
 		for fname in os.listdir(self._stud_p_path):
 			if fname.startswith('.'):
@@ -383,7 +386,31 @@ class Students(metaclass=StudentsMeta):
 		last = Casting.name_safe(d['lastname'], False)
 		return f"{d['id']}-{first}-{last}"
 
+	def cleanup_before_save(self, d: dict) -> dict:
+		if 'pf_url' in d:
+			cont = True
+			if d['pf_url'] is None:
+				d['pf_url'] = ''
+				# klaar
+				cont = False
+			if d['pf_url'] == '':
+				# klaar
+				cont = False
+
+			head, sep, tail = d['pf_url'].partition('/edit')
+			if cont and sep == '/edit':
+				d['pf_url'] = head
+				cont = False
+
+			head, sep, tail = d['pf_url'].partition('?usp')
+			if cont and sep == '?usp':
+				d['pf_url'] = head
+				cont = False
+
+		# other fields
+
 	def make_student_pickle(self, id: int, d) -> bool:
+		self.cleanup_before_save(d)
 		try:
 			ppath = os.path.join(self._stud_p_path, f"{self.generate_safename(id)}.pickle")
 			Pickles.write(ppath, d)
@@ -410,8 +437,10 @@ class Students(metaclass=StudentsMeta):
 	def make_studend_folder_path_from_d(self, d):
 		sysls_o = Sysls()
 		if d['s_year'] < 2020:
+			print('WRONG YEAR', d['s_year'])
 			return None
 		if not d['s_term'] in [1, 2, 3, 4, 5, 6]:
+			print('WRONG TERM', d['s_term'])
 			return None
 		jaar = sysls_o.get_sysl_item('s_year', d['s_year'])['name']
 		term = sysls_o.get_sysl_item('s_term', d['s_term'])['name']
@@ -449,6 +478,24 @@ class Students(metaclass=StudentsMeta):
 				newid = i
 		return newid + 1
 
+	def open_student_dir(self, id):
+		pad = self.make_student_folder_path(id)
+		if pad is None:
+			return
+		self.open_dir(pad)
+
+	def open_dir(self, pad):
+		if pad is None:
+			return
+		try:
+			if platform.system() == "Windows":
+				os.startfile(pad)
+			elif platform.system() == "Darwin":
+				subprocess.Popen(["open", pad])
+			else:
+				subprocess.Popen(["xdg-open", pad])
+		except Exception as e:
+			pass
 	def as_html(self, id):
 		sysls_o = Sysls()
 		# print(sys._getframe(1).f_code.co_name)
@@ -585,6 +632,7 @@ class Students(metaclass=StudentsMeta):
 		filename = self.generate_safename_full_from_d(d) + '.html'
 		dirpath = self.make_studend_folder_path_from_d(d)
 		filepath = os.path.join(dirpath, filename)
+		# print('HTML', filepath)
 		with open(filepath, 'w') as f:
 			f.write(html)
 
@@ -647,7 +695,6 @@ class Students(metaclass=StudentsMeta):
 			<ul>
 	'''
 
-
 class UserSetingsMeta(type):
 	_instances = {}
 	def __call__(cls, *args, **kwargs):
@@ -661,18 +708,66 @@ class UserSettings(metaclass=UserSetingsMeta):
 	_onedrive_path = ''
 	_props = dict()
 	_started = True
-	_rollen = ['administratie', 'docent', 'beheer', 'admin']
-	_alias = 'Victor'
+	_rollen = list()
+	_alias = ''
 	_title = ''
+	_userspath = ''
+	_users = dict()
 
 	def __init__(self):
 		self.init_props()
+
+	def _is(self) -> bool:
+		# check if users exist
+		if not os.path.isfile(self._userspath):
+			return False
+
+		# check if this user has user settings
+		if not 'user' in self._props:
+			return False
+
+		# known user with settings and login in own computer
+		return True
+
+	def login(self, alias: str, password: str) -> bool:
+		try:
+			r = self._users[alias]['password'] == password
+			if not r:
+				return False
+			user = self._users[alias].copy()
+		except:
+			return False
+
+		# logged in, now add data to self._props and self._alias, self._rollen
+		self._alias = alias
+		self._rollen = user['magda']
+		user['alias'] = alias
+		#remember for next time
+		self.set_prop('user', user)
+		return True
+
+	'''
+	def zzz_make_valid(self):
+		# for installment purposes only
+		# _rollen = ['administratie', 'docent', 'beheer', 'admin']
+
+		d = dict(
+			Victor = {'password': 'nr1', 'magda': ['administratie', 'docent', 'beheer', 'admin']},
+			Jaqueline = {'password': 'bnuskvbdhyswk', 'magda': ['administratie', 'docent', 'beheer']},
+			Marcel = {'password': 'sxtdncdklchnbd', 'magda': ['docent']},
+			Iris = {'password': 'trwnvcksghdes', 'magda': ['docent']},
+			Sarah = {'password': 'tgjklncdhsdlobg', 'magda': ['docent']},
+		)
+		print('make', self._userspath)
+		Pickles.write(self._userspath, d)
+	'''
 
 	def init_props(self):  # PROPS pad en OD pad EN het od pad is te vinden in de props pickle
 		try:
 			self._settings_path = Mainroad.get_settings_path()
 			self._props = Pickles.read(self._settings_path)
-		except:
+		except Exception as e:
+			Mainroad.loglog(f"Usersettings init-props settings {e}")
 			sys.exit(f'Kon geen settingsfile make of lezen')
 		if self._settings_path == '' \
 				or self._settings_path is None \
@@ -681,13 +776,27 @@ class UserSettings(metaclass=UserSetingsMeta):
 
 		try:
 			self._onedrive_path = Mainroad.get_onedrive_path()
-		except:
+		except Exception as e:
+			Mainroad.loglog(f"Usersettings init-props onedrive {e}")
 			sys.exit(f'Kon geen onedrive vinden of lezen')
+
+		self._userspath = os.path.join(Mainroad.get_onedrive_path(), 'system', 's_rs.pickle')
+		self._users = Pickles.read(self._userspath)
+
+		# user if known
+		try:
+			user = self.get_prop('user')
+			self._alias = user['alias']
+			self._rollen = user['magda']
+		except:
+			pass
 
 	def set_window_title(self, title: str):
 		self._title = title
 
 	def alias(self):
+		if self._alias == '':
+			return 'stranger'
 		return self._alias
 
 	def odpad(self):
@@ -720,3 +829,138 @@ class UserSettings(metaclass=UserSetingsMeta):
 	def force_refresh(self):
 		Pickles.delete(self._settings_path)
 		self._props = dict()
+
+	def get_props(self):
+		return self._props
+
+'''
+class HuntsMeta(type):
+	_instances = {}
+	def __call__(cls, *args, **kwargs):
+		if cls not in cls._instances:
+			instance = super().__call__(*args, **kwargs)
+			cls._instances[cls] = instance
+		return cls._instances[cls]
+
+class Hunts(metaclass=HuntsMeta):
+	_huntspath = ''
+	_defaultid = 1
+	_sysmem = dict()
+
+	def __init__(self):
+		self.init()
+
+	def init(self):
+		self._huntspath = os.path.join(Mainroad.get_onedrive_path(), '_DATABASE', 'hunts')
+		self._sysmem = dict()
+		if not os.path.isdir(self._huntspath):
+			os.mkdir(self._huntspath)
+		for fname in os.listdir(self._huntspath):
+			if fname.startswith('.'):
+				continue
+			if not fname.endswith('.pickle'):
+				continue
+			justname = fname.split('.')[0]
+			d = Pickles.read(os.path.join(self._huntspath, fname))
+			try:
+				self._sysmem[justname] = d
+			except:
+				continue
+		if not f"question_{self._defaultid}" in self._sysmem:
+			# nog geen standaard view 'min' in systeem:
+			d = self.empty_question()
+			pad = self.question_path(self._defaultid)
+			Pickles.write(pad, d)
+		if not f"hunt_{self._defaultid}" in self._sysmem:
+			# nog geen standaard view 'min' in systeem:
+			d = self.empty_hunt()
+			pad = self.hunt_path(self._defaultid)
+			Pickles.write(pad, d)
+
+	def question_path(self, id: int):
+		return os.path.join(self._huntspath, f"question_{id}.pickle")
+
+	def hunt_path(self, id: int):
+		return os.path.join(self._huntspath, f"hunt_{id}.pickle")
+
+	def make_question(self, d) -> bool:
+		id = Casting.int_(d['id'], default=1)
+		pad = self.question_path(id)
+		if Pickles.write(pad, d):
+			self.init()
+			return True
+		return False
+
+	def empty_answer(self):
+		return dict(
+			id=0,
+			answer='',
+			good=False,
+		)
+
+	def empty_question(self):
+		jus = UserSettings()
+		antwoorden = list()
+		for i in range(6):
+			a = self.empty_answer()
+			a['id'] = i
+			antwoorden.append(a)
+		return dict(
+			id=self._defaultid,
+			name='default',
+			html='<p></p>',
+			answers=antwoorden,
+			created_ts=Timetools.now_secs(),
+			color='#ffffff',
+			status=1,
+			alias=jus.alias(),
+		)
+
+	def get_questions(self):
+		# returns all hunt assignments
+		questions = dict()
+		for e in self._sysmem:
+			if not e.startswith('question_'):
+				continue
+			questions[e] = self._sysmem[e]
+		return questions
+
+	def get_single_question(self, id: int):
+		try:
+			return deepcopy(self._sysmem[f'question_{id}'])
+		except:
+			return None
+
+	def get_new_question_id(self) -> int:
+		newid = 0
+		for key, val in self.get_questions().items():
+			justid = val['id']
+			if justid > newid:
+				newid = justid
+		return newid + 1
+
+	def delete_question(self, id: int):
+		justname = f'question_{id}'
+		if justname in self._sysmem and id != self._defaultid:
+			del(self._sysmem[justname])
+			pad = self.question_path()
+			Pickles.delete(pad)
+			self.init()
+
+	def empty_hunt(self):
+		return dict(
+			id=self._defaultid,
+			type='scavenger', # or 'treasure'
+			name='default',
+			start_ts=0,
+			end_ts=0,
+			created_ts=Timetools.now_secs(),
+			questions=list(),
+			groups=list(),
+		)
+
+	def calc_hunt_status(self, id):
+		pass
+		
+		
+'''

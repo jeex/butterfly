@@ -27,7 +27,7 @@ td{
     border-radius: 3px;
 }
 .smal{
-    max-width: 2em;
+    max-width: 3em;
     overflow: hidden;
 }
 
@@ -162,4 +162,9 @@ h2{
     white-space: pre;
     overflow-wrap: normal;
     overflow-x: scroll;
+}
+input[type=text],
+input[type=url]{
+    border: 1px solid #bbb;
+    border-radius: 3px;
 }

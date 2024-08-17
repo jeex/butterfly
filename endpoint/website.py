@@ -1,9 +1,7 @@
 
 from flask import redirect, request, Blueprint, render_template
-from ftplib import FTP
-import io
 
-from helpers.general import Timetools, JINJAstuff
+from helpers.general import Timetools, JINJAstuff, FtpAnta
 from helpers.singletons import UserSettings, Sysls
 
 def jinja_object(ding):
@@ -44,7 +42,12 @@ def website(bron='local'):
 	website = None
 	if bron in ['global']:
 		# get from ftp
-		anta = FtpAnta()
+		anta = FtpAnta(
+			'cpnits.com',
+			'cpnitswebsite@cpnits.com',
+			'CpnitsWebsite',
+			'public_html'
+		)
 		if anta.has_indexhtml():
 			html = anta.get_indexhtml()
 			if not html is None:
@@ -100,7 +103,12 @@ def post_website(bron='local'):
 
 	if 'golive' in request.form:
 		# ftp to live
-		anta = FtpAnta()
+		anta = FtpAnta(
+			'cpnits.com',
+			'cpnitswebsite@cpnits.com',
+			'CpnitsWebsite',
+			'public_html'
+		)
 		if anta.has_indexhtml():
 			if anta.put_indexhtml(html):
 				return redirect('/website/global?message=succesfully saved local and global')
@@ -123,49 +131,6 @@ def html_example():
 	html = html.replace('static/', 'https://cpnits.com/static/')
 	print(html)
 	return html
-
-class FtpAnta:
-	url = 'cpnits.com'
-	user = 'cpnitswebsite@cpnits.com'
-	password = 'CpnitsWebsite'
-	htmldir = 'public_html'
-	fname = 'index.html'
-
-	def __init__(self):
-		try:
-			self.anta = FTP(self.url, self.user, self.password)
-			self.anta.cwd(self.htmldir)
-		except:
-			pass
-
-	def has_indexhtml(self) -> bool:
-		try:
-			return self.fname in self.anta.nlst()
-		except:
-			return False
-
-	def get_indexhtml(self) -> any:
-		# https://stackoverflow.com/questions/30449269/how-can-i-send-a-stringio-via-ftp-in-python-3
-		file = io.BytesIO()
-		try:
-			with file as fp:
-				self.anta.retrbinary(f'RETR {self.fname}', fp.write)
-				# file_wrapper = io.TextIOWrapper(file, encoding='utf-8')
-				return file.getvalue().decode()
-		except:
-			return None
-
-
-	def put_indexhtml(self, html: str) -> bool:
-		file = io.BytesIO()
-		file_wrapper = io.TextIOWrapper(file, encoding='utf-8')
-		file_wrapper.write(html)
-		file.seek(0)
-		try:
-			return bool(self.anta.storbinary(f"STOR {self.fname}", file))
-		except:
-			return False
-
 
 def default_html():
 	return '''<!DOCTYPE HTML>

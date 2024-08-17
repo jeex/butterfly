@@ -1,4 +1,4 @@
-
+from pprint import pprint as ppp
 from flask import redirect, request, Blueprint, render_template
 from helpers.general import Casting, Timetools, JINJAstuff, BaseClass
 from endpoint.studenten import Student
@@ -48,22 +48,28 @@ def view(singlename):
 			single = jinja_object(val)
 		all[key] = jinja_object(val)
 
+	# fieldnames are standard db field names
 	fieldnames = list(Student.get_empty().keys())
-	eruit = ['id', 'firstname', 'lastname', 's_gender', 'grade_ts', 'kom_code', 'notes', 'circulars']
+	# eruit are fieldnames that cannot be used in a view, or that are always included
+	eruit = ['id', 'firstname', 'lastname', 's_gender', 'grade_ts', 'kom_code', 'notes', 'circulars', 'customs']
 
 	fields = dict()
 	for s in fieldnames:
 		if s in eruit:
 			continue
 		fields[s] = Student.get_nicename(s)
+	# fields now contains all the standard available fields for a view
 
+	# single._try(fields) contains the fields in this single view
 	for s in single._try('fields', default=[]):
 		if s in fieldnames:
 			fields[s] = Student.get_nicename(s)
 		else:
+			# these are the circulars fields
 			fields[s] = s
 
 	sysls_o = Sysls()
+	# these are the available groups
 	groepen = sysls_o.get_sysl('s_group')
 	for g in list(groepen.keys()):
 		if groepen[g]['status'] != 1:
@@ -112,7 +118,7 @@ def view_post(singlename):
 		veldnamen = request.form['fieldnamelist'].split(',')
 	except:
 		return redirect(f"/views/{singlename}")
-	veldnaam = Casting.name_safe(request.form['fieldname'], True)
+	veldnaam = Casting.str_(request.form['fieldname'], '')
 
 	if veldnaam != '':
 		if 'add-field' in request.form:
@@ -121,9 +127,13 @@ def view_post(singlename):
 		elif 'delete-field' in request.form:
 			veldnamen.remove(veldnaam)
 
-		elif 'new-custom-field' in request.form:
+		elif 'new-cycle-field' in request.form:
 			if not veldnaam in veldnamen:
-				veldnamen.append(veldnaam)
+				veldnamen.append(f"c_{veldnaam}")
+
+		elif 'new-text-field' in request.form:
+			if not veldnaam in veldnamen:
+				veldnamen.append(f"t_{veldnaam}")
 
 	single['fields'] = veldnamen
 	views_o.make_view(single)

@@ -1,0 +1,157 @@
+{% include '_head.html' %}
+<link rel="stylesheet" href="/static/views.css" />
+
+{% set canedit = false %}
+
+</head>
+<body>
+    {% include '_menu.html' %}
+        <menu class="submenu">
+            <ul>
+                <li class="{{ 'actief'|safe if submenu == 'vragen' }}"><a href="/hunts">vragen</a></li>
+                <li class="{{ 'actief'|safe if submenu == 'hunt' }}"><a href="/hunt">hunt</a></li>
+                <li class="{{ 'actief'|safe if submenu == 'results' }}"><a href="/results">resultaten</a></li>
+            </ul>
+        </menu>
+    </header>
+    <main>
+        <div class="two-columns">
+            <div>
+               <div class="single-form">
+                <h2 style="margin-bottom: 1em;">Hunt opdrachten</h2>
+               <div>
+                   {% set a = all[1] %}
+                    <label>
+                        <a class="asbutton kopieknop" style="background-color: var(--menu)" href="/hunts/hunt/kopie/{{ a._try('id') }}">kopie</a>
+                        <a style="{{ 'color: #888;' if a._try('status') < 1 }}" class="asbutton" href="/hunts/hunt/{{ a._try('id') }}">bekijk</a>
+                    </label>
+                    <div class="view-info">
+                        {{ a._try('name')|safe }}
+                    </div>
+                </div>
+
+               <p style="border-bottom: 1px solid var(--menu); margin:0;"></p>
+                {% for id, a in all.items() %}
+                    {% if not id == 1 and a._try('status') == 1 %}
+                        <label>
+                            <a class="asbutton kopieknop" style="background-color: var(--menu)" href="/hunts/hunt/kopie/{{ id }}">kopie</a>
+                            <a style="{{ 'color: #888;' if a._try('status') < 1 }}" class="asbutton" href="/hunts/hunt/{{ a._try('id') }}">bewerk</a>
+                        </label>
+                        <div class="view-info " style="background-color: {{ a._try('color') }};">
+                            {{ a._try('name')|safe }}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+
+               <p style="border-bottom: 1px solid var(--menu); margin:0;"></p>
+                {% for id, a in all.items() %}
+                    {% if not id == 1 and a._try('status') != 1 %}
+                        <label>
+                            <a class="asbutton kopieknop" style="background-color: var(--menu)" href="/hunts/hunt/kopie/{{ id }}">kopie</a>
+                            <a style="{{ 'color: #888;' if a._try('status') < 1 }}" class="asbutton" href="/hunts/hunt/{{ a._try('id') }}">bewerk</a>
+                        </label>
+                        <div class="view-info" style="background-color: {{ a._try('color') }};">
+                            {{ a._try('name')|safe }}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+               </div>
+            </div>
+
+
+            <!-- rechterkolom -->
+            <div>
+                {% if kopie is none %}
+                    <h2>{{ single._try('name')|safe }} {{ 'is niet bewerkbaar' if single._id() == 1 }}</h2>
+                    <form method="post" action="/hunts/hunt/{{ single._id() }}" class="single-form" style="display: block;">
+                        <p>
+                            <label>Naam</label>
+                            <input {{ 'disabled' if single._id() == 1 }} type="text" name="name" value="{{ single._try('name')|safe }}">
+                        </p>
+                        <p>
+                            <label>Status</label>
+                            <select  {{ 'disabled' if single._id() == 1 }} >
+                                <option {{ 'selected' if single._try('status')|int == 1 }} value="1">actief</option>
+                                <option {{ 'selected' if single._try('status')|int != 1 }} value="0">passief</option>
+                            </select>
+                        </p>
+                        <p>
+                            <label>Kleur</label>
+                            <input type="color" name="color" value="{{ single._try('color') }}">
+                        </p>
+                        <p>
+                            <label>Opdracht</label>
+                            <textarea  {{ 'disabled' if single._id() == 1 }}  style="width: 400px;" rows="10" name="html">{{ single._try('html')|safe }}</textarea>
+                        </p>
+
+                        {% if single._id() > 1 %}
+                            <div>
+
+                            </div>
+                            <p>
+                                <label><input class="valop" type="submit" name="delete" value="Verwijderen"></label>
+                                <input type="submit" name="save" value="Opslaan">
+                            </p>
+                        {% endif %}
+                    </form>
+
+
+                {% else %}
+                    <h2>Maak een kopie van: {{ single._try('name') }}</h2>
+                    <form class="single-form" name="kopie" method="post" action="/hunts/hnut/kopie/{{ kopie }}">
+                        <select name="welk">
+                            <option value="scavenger">scavener</option>
+                            <option value="treasure">treasure</option>
+                        </select>
+                        <input pattern=".{3,}" required type="text" name="newname" placeholder="Naam hunt">
+                        <input type="submit" name="kopieer" value="Maak">
+                    </form>
+                {% endif %}
+            </div>
+
+        </div>
+    </main>
+<script>
+    let name_safe = function(erin, maxlen){
+        erin = erin.replaceAll(/[^a-zA-Z0-9_]/gi, '').substring(0,maxlen);
+        return erin
+    }
+
+    $(function(){
+        $('input[name="newname"]').on('keyup', function(){
+            var t = $(this).val();
+            // t = name_safe(t, 10);
+            // $(this).val(t);
+        });
+        $('textarea').on('keydown', function(e){
+            if(e.key == 'Tab'){
+                e.preventDefault();
+                var start = this.selectionStart;
+                var end = this.selectionEnd;
+                // set textarea value to: text before caret + tab + text after caret
+                this.value = this.value.substring(0, start) + "\t" + this.value.substring(end);
+                // put caret at right position again
+                this.selectionStart = this.selectionEnd = start + 1;
+            }
+        });
+
+        $.each($('.view-info'), function(){
+            var k = $(this).css('background-color');
+            k = calc_contra_color(k);
+            $(this).css('color', k);
+        });
+
+        $('form[name="antwoorden"]').on('submit', function(e){
+
+        })
+
+        $(window).keydown(function(e){
+            if(e.keyCode == 13) {
+                e.preventDefault();
+                $('input[name="save"]').focus();
+                return false;
+            }
+        });
+    });
+</script>
+</body>

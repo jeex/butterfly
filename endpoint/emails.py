@@ -28,7 +28,7 @@ ep_email = Blueprint(
 )
 
 alle_emails = ['confirm', 'grade'] #, 'hunt']
-placeholders = ['naam', 'minor', 'periode', 'jaar', 'ec', 'cijfer', 'wachtwoord']
+placeholders = ['name', 'minor', 'period', 'year', 'ec', 'grade', 'password']
 
 @ep_email.get('/')
 def emails():

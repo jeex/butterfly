@@ -3,9 +3,9 @@ import sqlite3
 class Sqlite:
     db = None
 
-    def __init__(self):
+    def __init__(self, pad: str):
         try:
-            self.db = sqlite3.connect('cpnits26.sqlite')
+            self.db = sqlite3.connect(pad)
             self.db.row_factory = sqlite3.Row
             self.cur = self.db.cursor()
         except Exception as e:

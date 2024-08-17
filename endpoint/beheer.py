@@ -1,7 +1,7 @@
 from flask import redirect, request, Blueprint, render_template
 
-from helpers.general import Casting, IOstuff, ListDicts, JINJAstuff
-from helpers.singletons import UserSettings, Sysls
+from helpers.general import Casting, IOstuff, ListDicts, JINJAstuff, Mainroad
+from helpers.singletons import UserSettings, Sysls, Students
 
 def jinja_object(ding):
 	sysls_o = Sysls()
@@ -17,6 +17,19 @@ ep_beheer = Blueprint(
 )
 
 menuitem = 'beheer'
+
+@ep_beheer.get('/generate')
+def generate():
+	# generate all student folders (if not exist)
+	# generate all html files (overwrite)
+	students_o = Students()
+	for id in students_o.all():
+		students_o.as_html(id)
+
+	# now open containing folder
+	pad = Mainroad.get_student_dirs_path()
+	students_o.open_dir(pad)
+	return redirect('/home')
 
 @ep_beheer.get('/')
 @ep_beheer.get('/<path:sysl>')

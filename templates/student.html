@@ -1,5 +1,6 @@
 {% include '_head.html' %}
 <link rel="stylesheet" href="/static/studenten.css" />
+<script src="/static/tinymce/tinymce.min.js"></script>
 
 </head>
 <body>
@@ -7,13 +8,13 @@
     </header>
     <main>
         <div class="links" style="text-align: center; border-bottom: 1px solid var(--menu); padding-bottom: 0.5em;">
-            {% if student._try('s_group') > 1 and props.magda(['docent', 'beheer'])%}
-                <a  style="background-color: {{ student._s_item('s_group')['color'] }}" class="asbutton" href="/groepen/{{ student._try('s_group') }}">naar {{ student._s_item('s_group')['name'] }}</a>
+            {% if student._try('s_group')|int > 1 and props.magda(['docent', 'beheer'])%}
+                <a  style="background-color: {{ student._s_item('s_group')['color'] }}" class="asbutton" href="/groepen/{{ student._try('s_group') }}">to {{ student._s_item('s_group')['name'] }}</a>
             {% endif %}
-            <a class="asbutton" href="/studenten/{{ student._try('filter') }}">naar {{ student._try('filter') }}</a>
+            <a class="asbutton" href="/studenten/{{ student._try('filter') }}">to {{ student._try('filter') }}</a>
             {% if props.magda(['administratie', 'beheer']) %}
-                <a style="background-color: var(--menu); color: black;" class="asbutton" href="/studenten/new">nieuwe student</a>
-                <a style="background-color: dodgerblue; color: white;" class="asbutton" href="/studenten/import">import lijst Joke</a>
+                <a style="background-color: var(--menu); color: black;" class="asbutton" href="/studenten/new">new student</a>
+                <a style="background-color: dodgerblue; color: white;" class="asbutton" href="/studenten/import">import list JB</a>
             {% endif %}
         </div>
 
@@ -28,11 +29,11 @@
                         <label>ID</label>
                         {{ student._id() }}
                         {% if studmappad is not none and not nieuw %}
-                            <a class="single-links-rechts asbutton" href="/studenten/opendir/{{ student._id() }}">open map</a>
+                            <a class="single-links-rechts asbutton" href="/studenten/opendir/{{ student._id() }}">open student folder</a>
                         {% endif %}
                     </p>
                     <p>
-                        <label>Aanmaak</label>
+                        <label>Created</label>
                         {{ student._try('created_ts')|datetime }}
                     </p>
                     {% if not nieuw %}
@@ -40,7 +41,7 @@
                         {% set item = student._s_item('s_group') %}
                         <p>
                             {% set sysl = sysls['s_group'] %}
-                            <label style="background-color: {{ item['color'] }}">Groep</label>
+                            <label style="background-color: {{ item['color'] }}">Group</label>
                             <select {{ readonly }} name="s_group">
                                 <option value="0"> </option>
                                 {% for s in sysl %}
@@ -60,11 +61,11 @@
 
                     {% if props.magda(['beheer', 'administratie']) %}{% set readonly = '' %}{% else %}{% set readonly = 'disabled' %}{% endif %}
                     <p>
-                        <label>Voornaam</label>
+                        <label>First name</label>
                         <input {{ readonly }} name="firstname" type="text" value="{{ student._try('firstname') }}">
                     </p>
                     <p>
-                        <label>Achternaam</label>
+                        <label>Sir name</label>
                         <input {{ readonly }} name="lastname" type="text" value="{{ student._try('lastname') }}">
                     </p>
                     <p>
@@ -76,7 +77,7 @@
                         {% set item = student._s_item('s_gender') %}
                         <p>
                             {% set sysl = sysls['s_gender'] %}
-                            <label style="background-color: {{ item['color'] }}">mvo</label>
+                            <label style="background-color: {{ item['color'] }}">mfo</label>
                             <span class="radiospan">
                                 {% for s in sysl %}
                                     {% if s == student._try('s_gender') %}
@@ -101,20 +102,20 @@
                                 <input name="pf_url" type="text" value="{{ student._try('pf_url') }}">
                             </p>
                             <p>
-                                <label>Wachtwoord</label>
+                                <label>Password</label>
                                 <input name="password" type="text" value="{{ student._try('password') }}">
                             </p>
                         {% endif %}
                         {% if props.magda(['beheer', 'docent']) %}{% set readonly = '' %}{% else %}{% set readonly = 'disabled' %}{% endif %}
                         <p>
-                            <label>Cijfer</label>
+                            <label>Grade</label>
                             <input {{ readonly }} name="grade" min="0" max="100" step="10" type="number" value="{{ student._try('grade') }}">
                         </p>
                         <p>
-                            <label>Cijferdatum</label>
+                            <label>Grade date</label>
                             {% if student._try('grade_ts') > 0 %}
                                 {{ student._try('grade_ts')|date }}
-                                <a class="single-links-rechts asbutton" id="grade-mail" href="#">Verstuur email</a>
+                                <a class="single-links-rechts asbutton" id="grade-mail" href="#">Send email</a>
                             {% endif %}
                         </p>
                     {% endif %}
@@ -141,8 +142,8 @@
 
                     {% if not nieuw and student._try('s_status') == 10 and props.magda(['beheer']) %}
                         <p>
-                            <label>Uitnodigen</label>
-                            <a id="invite-mail " class="asbutton" href="#">stuur bevestiging</a>
+                            <label>Invite</label>
+                            <a id="invite-mail " class="asbutton" href="#">Send confirmation</a>
                         </p>
                     {% endif %}
 
@@ -150,7 +151,7 @@
                     <p>
                         {% if props.magda(['beheer', 'administratie']) %}{% set readonly = '' %}{% else %}{% set readonly = 'disabled' %}{% endif %}
                         {% set sysl = sysls['s_origin'] %}
-                        <label style="background-color: {{ item['color'] }}">Herkomst</label>
+                        <label style="background-color: {{ item['color'] }}">Origin</label>
                         {% if student._try('s_year')|int < 2024 %}
                                 <select {{ readonly }} name="s_origin">
                                 <option value="0"> </option>
@@ -205,7 +206,7 @@
                         {% set item = student._s_item('s_program') %}
                         <p>
                             {% set sysl = sysls['s_program'] %}
-                            <label style="background-color: {{ item['color'] }}">Opleiding</label>
+                            <label style="background-color: {{ item['color'] }}">Program</label>
                             <select name="s_program">
                                 <option value="0"> </option>
                                 {% for s in sysl %}
@@ -225,7 +226,7 @@
                         <p>
                             {% if props.magda(['beheer', 'administratie']) %}{% set readonly = '' %}{% else %}{% set readonly = 'disabled' %}{% endif %}
                             {% set sysl = sysls['s_year'] %}
-                            <label style="background-color: {{ item['color'] }}">Jaar</label>
+                            <label style="background-color: {{ item['color'] }}">Year</label>
                             <select {{ readonly }} name="s_year">
                                 <option value="0"> </option>
                                 {% for s in sysl %}
@@ -245,7 +246,7 @@
                         <p>
                             {% if props.magda(['beheer', 'administratie']) %}{% set readonly = '' %}{% else %}{% set readonly = 'disabled' %}{% endif %}
                             {% set sysl = sysls['s_term'] %}
-                            <label style="background-color: {{ item['color'] }}">Periode/Semester</label>
+                            <label style="background-color: {{ item['color'] }}">Period/Semester</label>
                             <select {{ readonly }} name="s_term">
                                 <option value="0"> </option>
                                 {% for s in sysl %}
@@ -300,7 +301,7 @@
                         <p>
                             {% if props.magda(['beheer', 'administratie']) %}{% set readonly = '' %}{% else %}{% set readonly = 'disabled' %}{% endif %}
                             {% set sysl = sysls['s_lang'] %}
-                            <label style="background-color: {{ item['color'] }}">Taal</label>
+                            <label style="background-color: {{ item['color'] }}">Language</label>
                             <span class="radiospan">
                                 {% for s in sysl %}
                                     {% if s == student._try('s_lang') %}
@@ -320,7 +321,7 @@
                             {% set item = student._s_item('s_stream') %}
                             <p>
                                 {% set sysl = sysls['s_stream'] %}
-                                <label style="background-color: {{ item['color'] }}">Stroom</label>
+                                <label style="background-color: {{ item['color'] }}">Stream</label>
                                 <span class="radiospan fill">
                                     {% for s in sysl %}
                                         {% if s == student._try('s_stream') %}
@@ -368,29 +369,28 @@
                     {% endif %}
 
                     <p>
-                        <input class="single-links-rechts" type="submit" name="save" value="Opslaan">
-                        {% if not nieuw and props.magda(['beheer']) %}
-                            <input class="valop" style="margin-left: 35px;" type="submit" name="delete" value="Verwijderen">
+                        <input class="single-links-rechts" type="submit" name="save" value="Save">
+                        {% if false and not nieuw and props.magda(['admin']) %}
+                            <input class="valop" style="margin-left: 35px;" type="submit" name="delete" value="Delete">
                         {% else %}
 
                         {% endif %}
                     </p>
                 </form>
             </div>
-
             {% if props.magda(['docent', 'beheer']) %}
-                <div>
+                <div class="notities-bij-student">
                     {% if not nieuw %}
                         <form style="display: block; width: 100%;" class="note" action="/studenten/note/{{ student._id() }}" method="post">
                             <p><textarea style="width: 99%; height: 5em;" name="note"></textarea></p>
                             <p style="display: flex; flex-wrap: wrap; flex-direction: row; justify-content: space-between;">
-                                <input type="submit" name="new" value="Opslaan">
+                                <input type="submit" name="new" value="Save">
                             </p>
                         </form>
 
                         {% for note in student._try('notes') %}
                             <div class="note">
-                                <p>{{ note['note'] }}</p>
+                                <p>{{ note['note']|safe }}</p>
                                 <div class="{{ 'valop' if note['done'] == 0 }}">
                                     <span>{{ note['alias'] }}</span>
                                     <span>{{ note['created_ts']|datetime }}</span>

@@ -25,11 +25,11 @@
     </header>
     <main>
         <div class="contrast" style="text-align: center; background-color: {{ groep['color'] }};padding: 0.5em; margin-bottom: 0.5em;">
-             Groep: {{ groep['name'] }} [{{ students|length }}]
+             Group: {{ groep['name'] }} [{{ students|length }}]
             {% for a, aa in avs.items() %}
                 <a href="/groepen/{{ groep['id'] }}/{{ a }}" class="asbutton contrast" style="background-color: {{ aa['color'] }}">{{ a }}</a>
             {% endfor %}
-            <a href="/groepen/{{ groep['id'] }}/FULL" class="asbutton contrast" style="background-color: black">alles</a>
+            <a href="/groepen/{{ groep['id'] }}/FULL" class="asbutton contrast" style="background-color: black">all</a>
         </div>
 
         <form id="no-ajax" style="display: none;" method="post" action="/groepen/{{ groep['id'] }}/{{ viewname }}">
@@ -47,10 +47,17 @@
                         <th style="background-color: {{ view['color'] }};" class="contrast no-sort"><input type="checkbox" name="add" value="all"></th>
                         <th style="background-color: {{ view['color'] }};" class="contrast"><span></span>id</th>
                         {% for f in view['fields'] %}
-                            {% if f in ['id', 'notes', 'circulars', 'todo'] %}
+                            {% if f in ['id', 'notes', 'circulars', 'customs', 'todo', 'kom_code', 'nhls_code', 'password'] %}
+                                <!-- pass -->
+
+                            {% elif f.startswith('c_') %}
+                                <th style="background-color: {{ view['color'] }};" class="contrast smal circular no-sort" id="{{ f }}"><span></span>{{ f.replace('c_', '') }}</th>
+
+                            {% elif f.startswith('t_') %}
+                                <th style="background-color: {{ view['color'] }};" class="contrast smal custom no-sort" id="{{ f }}"><span></span>{{ f.replace('t_', '') }}</th>
 
                             {% else %}
-                                <th style="background-color: {{ view['color'] }};" class="contrast {{ 'smal' if f in smalfields }} {{ 'circular' if f not in afns }} {{ 'no-sort' if f not in afns or f in ['grade'] }}" id="{{ f }}"><span></span>{{ view['nicenames'][f] }}</th>
+                                <th style="background-color: {{ view['color'] }};" class="contrast {{ 'smal' if f in smalfields }} {{ 'no-sort' if f not in afns or f in ['grade'] }}" id="{{ f }}"><span></span>{{ view['nicenames'][f] }}</th>
                             {% endif %}
                         {% endfor %}
                     </tr>
@@ -62,7 +69,7 @@
                         <td style="background-color: {{ view['color'] }}; border-radius: 0;" ><input type="checkbox" name="add" value="{{ id }}"></td>
                         <td data-csv="{{ id }}" ><a class="asbutton {{ 'valop' if s._try('todo') == 1 }}" href="/studenten/single/{{ id }}">{{ id|vier }}</a></td>
                         {% for f in view['fields'] %}
-                            {% if f in ['id', 'notes', 'circulars', 'todo'] %}
+                            {% if f in ['id', 'notes', 'circulars', 'customs', 'todo', 'kom_code', 'nhls_code', 'password'] %}
 
                             {% elif f == 'pf_url' %}
                                 <td class="dblignore" data-csv="{{ s._try('pf_url') }}" data-th="pf_url">
@@ -78,8 +85,11 @@
                             {% elif f in ['grade_ts', 'created_ts'] %}
                                 <td data-csv="{{ s._try(f)|date }}" data-th="{{ f }}">{{ s._try(f)|date }}</td>
 
-                            {% elif f not in afns %}
-                                <td style="cursor:pointer; background-color: {{ s._circular(viewname, f)|circ }}; border-radius: 0; border:1px solid white;" data-cirname="{{ f }}" data-cirval="{{ s._circular(viewname, f) }}" class="contrast circular dblignore"></td>
+                            {% elif f.startswith('c_') %}
+                                <td style="cursor:pointer; background-color: {{ s._circular(viewname, f)|circ }}; border: 1px solid {{ groep['color'] }}" data-cirname="{{ f }}" data-cirval="{{ s._circular(viewname, f) }}" data-csv="{{ s._circular(viewname, f) }}" class="contrast circular dblignore"></td>
+
+                            {% elif f.startswith('t_') %}
+                                <td data-cusname="{{ f }}" data-cusval="{{ s._custom(viewname, f) }}" data-csv="{{ s._custom(viewname, f) }}" class="contrast custom dblignore"><input style="width: 6em!important;" type="text" name="{{ f }}" value="{{ s._custom(viewname, f) }}"></td>
 
                             {% elif f.startswith('s_') %}
                                 {% set item = s._s_item(f) %}
@@ -129,10 +139,24 @@
     {% include 'studenten.js' %}
 </script>
 <script>
+    let isValidHttpUrl = function(string){
+        let url;
+        try{
+            url = new URL(string);
+        }catch (_){
+            return false;
+        }
+        return url.protocol === "http:" || url.protocol === "https:";
+    }
+
     $('input[name="pf_url"]').on('keypress', function(e){
         var keycode = (e.keyCode ? e.keyCode : e.which);
         if(keycode == 13){
             let pfu = $(this).val();
+            if(!isValidHttpUrl(pfu) && pfu !== ''){
+                $(this).val('')
+                return;
+            }
             $('#no-ajax input[name="field-name"]').val('pf_url');
             $('#no-ajax input[name="what"]').val('portfolio');
             $('#no-ajax input[name="field-value"]').val(pfu);
@@ -155,6 +179,19 @@
             $('#no-ajax input[name="field-value"]').val(grade);
             let id = $(this).closest('tr').attr('id')*1;
             $('#no-ajax input[name="student-id"]').val(id)
+            $('#no-ajax').submit();
+        }
+    });
+
+    $('td.custom input').on('keypress',function(e) {
+        if(e.which === 13){
+            let id = $(this).closest('tr').attr('id')*1;
+            let cusval = $(this).val().trim();
+            let cusname =$(this).prop('name');
+            $('#no-ajax input[name="student-id"]').val(id)
+            $('#no-ajax input[name="field-name"]').val(cusname);
+            $('#no-ajax input[name="what"]').val('customs');
+            $('#no-ajax input[name="field-value"]').val(cusval);
             $('#no-ajax').submit();
         }
     });

@@ -3,13 +3,18 @@ from datetime import datetime
 import pytz
 import time
 import os
-import sys
 from urllib.parse import quote_plus as kwoot
 import re
 import pickle
+
+from ftplib import FTP
+import io
+
 import appdirs
 import tkinter as tk
 from tkinter import filedialog
+
+LOGGING = False
 
 class Pickles:
 	@classmethod
@@ -38,12 +43,40 @@ class Pickles:
 			return False
 
 class Mainroad:
+	forca = list()
+
+	@classmethod
+	def force_access(cls, name, accessdir):
+		if name in cls.forca:
+			return
+
+		try:
+			with open(os.path.join(accessdir, 'access.txt'), 'a') as f:
+				f.write(f"Force access to {name} \n\t{accessdir} \n\t@ {Timetools.now_string()}")
+				cls.loglog(f"Force access to {name} \n\t{accessdir} \n\t@ {Timetools.now_string()}")
+				cls.forca.append(name)
+		except Exception as e:
+			cls.loglog(f"Force access to {name} failed \n\t{e}")
+			return
+		try:
+			pass
+			os.remove(os.path.join(accessdir, 'access.txt'))
+		except:
+			pass
+		cls.loglog(f"Force access to {name} GELUKT")
+
 	@classmethod
 	def get_settings_path(cls):
+		# force access
+		cls.force_access('settings', os.path.join(appdirs.user_config_dir()))
 		# if not, make one
 		settings_dir = os.path.join(appdirs.user_config_dir(), 'JeexButterfly')
-		if not os.path.isdir(settings_dir):
-			os.makedirs(settings_dir)
+		try:
+			if not os.path.exists(settings_dir):
+				os.makedirs(settings_dir)
+		except Exception as e:
+			Mainroad.loglog(str(e))
+			pass
 		settings_pickle_path = os.path.join(settings_dir, 'butterfly_props.pickle')
 
 		if not os.path.isfile(settings_pickle_path):
@@ -82,10 +115,36 @@ class Mainroad:
 			settings_path = cls.get_settings_path()
 			settings = Pickles.read(settings_path)
 			onedrive_path = settings[f'onedrive']
+
+			if onedrive_path != '':
+				cls.force_access('onedrive', onedrive_path)
+
 			return onedrive_path
 		except:
 			# geen onedrive in settings
 			return None
+
+	@classmethod
+	def get_system_path(cls):
+		return os.path.join(cls.get_onedrive_path(), 'system')
+
+	@classmethod
+	def get_emails_path(cls):
+		return os.path.join(cls.get_onedrive_path(), 'emails')
+
+	@classmethod
+	def get_views_path(cls):
+		return os.path.join(cls.get_onedrive_path(), 'views')
+
+	@classmethod
+	def get_studentpickles_path(cls):
+		return os.path.join(cls.get_onedrive_path(), 'students')
+
+	@classmethod
+	def get_student_dirs_path(cls):
+		# is dir up from onedrive_path / _JAREN
+		upper = os.path.dirname(cls.get_onedrive_path())
+		return os.path.join(upper, '_JAREN')
 
 	@classmethod
 	def get_window_props(cls) -> list|None:
@@ -100,30 +159,49 @@ class Mainroad:
 	def set_window_props(cls, window_props):
 		propspad = cls.get_settings_path()
 		props = Pickles.read(propspad)
-		props['window'] = window_props
-		Pickles.write(propspad, props)
+		if not props is None:
+			props['window'] = window_props
+			Pickles.write(propspad, props)
+		else:
+			d = dict(
+				window=[],
+				onedrive='',
+			)
+			Pickles.write(propspad, d)
 
 	@classmethod
 	def set_new_onedrive(cls):
 		# from main thread
-		print('INITIALIZED')
-		s = cls.get_onedrive_path()
-		if not s is None:
-			if '/BUTTERFLY_CPNITS' in s:
+		# print('INITIALIZING')
+		odname = cls.get_onedrive_path()
+		# print('huidige pad', odname)
+		if not odname is None:
+			if odname.endswith('_BUTTERFLY') and os.path.isdir(odname):
+				# print('pad klopt')
 				return
 		while True:
 			root = tk.Tk()
 			root.withdraw()
 			odname = filedialog.askdirectory()
+			# print('opgegeven', odname)
 			if odname is None:
 				continue
-			if not '/BUTTERFLY_CPNITS' in odname:
+			if not odname.endswith('_BUTTERFLY'):
 				continue
 			break
 		pp = cls.get_settings_path()
 		p = Pickles.read(pp)
 		p['onedrive'] = odname
 		Pickles.write(pp, p)
+		# print('opgeslagen', p)
+
+	@classmethod
+	def loglog(cls, t: str):
+		if LOGGING:
+			pad = '/Users/jeex/Desktop/loglog.log'
+			with open(pad, 'a') as f:
+				f.write(t + '\n')
+
 
 class BaseClass:
 	@classmethod
@@ -148,9 +226,9 @@ class Casting:
 		nieuw = []
 		for p in parts:
 			if nums:
-				p = re.sub(r'[^a-zA-Z0-9_]', '', p, count=1000).lower()
+				p = re.sub(r'[^a-zA-Z0-9_]', '', p, count=1000).lower().strip()
 			else:
-				p = re.sub(r'[^a-zA-Z_]', '', p, count=1000).lower()
+				p = re.sub(r'[^a-zA-Z_]', '', p, count=1000).lower().strip()
 			if p != '':
 				nieuw.append(p)
 		return '-'.join(nieuw)
@@ -636,3 +714,66 @@ class JINJAstuff:
 
 	def get_record(self):
 		return self.record
+
+
+class FtpAnta:
+	# url = 'cpnits.com'
+	# user = 'cpnitswebsite@cpnits.com'
+	# password = 'CpnitsWebsite'
+	# htmldir = 'public_html'
+
+	def __init__(self, url, user, password, basedir):
+		self.url = url
+		self.user = user
+		self.password = password
+		self.basedir = basedir
+		try:
+			self.anta = FTP(self.url, self.user, self.password)
+			self.anta.cwd(self.basedir)
+		except:
+			pass
+
+	def has_indexhtml(self) -> bool:
+		try:
+			return 'index.html' in self.anta.nlst()
+		except:
+			return False
+
+	def get_indexhtml(self) -> any:
+		# https://stackoverflow.com/questions/30449269/how-can-i-send-a-stringio-via-ftp-in-python-3
+		file = io.BytesIO()
+		try:
+			with file as fp:
+				self.anta.retrbinary(f'RETR index.html', fp.write)
+				# file_wrapper = io.TextIOWrapper(file, encoding='utf-8')
+				return file.getvalue().decode()
+		except:
+			return None
+
+	def put_indexhtml(self, html: str) -> bool:
+		file = io.BytesIO()
+		file_wrapper = io.TextIOWrapper(file, encoding='utf-8')
+		file_wrapper.write(html)
+		file.seek(0)
+		try:
+			return bool(self.anta.storbinary(f"STOR index.html", file))
+		except:
+			return False
+
+	def goto_path(self, path: str):
+		pass
+	'''
+	def get_file(self, path: str) -> bool:
+		try:
+			name = path.split('/')[-1]
+			return bool(self.anta.storbinary(f"STOR {name}", file))
+		except:
+			return False
+
+	def put_file(self, path: str) -> bool:
+		try:
+			name = path.split('/')[-1]
+			return bool(self.anta.storbinary(f"STOR {name}", file))
+		except:
+			return False
+	'''

@@ -122,6 +122,8 @@ def studenten_groep_post(groepnr, viewname):
 		return redirect(f"/groepen/{groepnr}/{viewname}")
 
 	cc = 'circulars' #avoid typoos
+	cu = 'customs'
+
 	id = Casting.int_(request.form['student-id'], 0)
 	field = Casting.str_(request.form['field-name'], '')
 	what = Casting.str_(request.form['what'], '')
@@ -142,6 +144,7 @@ def studenten_groep_post(groepnr, viewname):
 		student['grade_ts'] = Timetools.now_secs()
 
 	elif what == cc:
+		# click on circular field
 		cirval = Casting.int_(request.form['field-value'], 0)
 		if cirval < 3:
 			cirval += 1
@@ -156,6 +159,18 @@ def studenten_groep_post(groepnr, viewname):
 			student[cc][viewname][field] = cirval
 		else:
 			student[cc][viewname][field] = cirval
+
+	elif what == cu:
+		# edit in custom text fiel
+		cusval = Casting.str_(request.form['field-value'], '')
+		if not cu in student:
+			student[cu] = {viewname: {field: cusval}}
+		if not viewname in student[cu]:
+			student[cu][viewname] = {field: cusval}
+		if not field in student[cu][viewname]:
+			student[cu][viewname][field] = cusval
+		else:
+			student[cu][viewname][field] = cusval
 
 	students_o.make_student_pickle(id, student)
 	# eventualy fix student dir issues

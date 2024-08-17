@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template
-
+from flask import Blueprint, render_template, redirect, request, templating
+import os
 from helpers.singletons import UserSettings, Students
+from helpers.general import Casting, Mainroad
 
 from endpoint.studenten import (
 	StudentJinja,
@@ -19,14 +20,16 @@ menuitem = 'home'
 
 @ep_home.get('/')
 def home():
+	jus = UserSettings()
+	if not jus._is():
+		return redirect('/home/login')
 
 	students_o = Students()
-	jus = UserSettings()
-
 	todos = list()
 	mijntodos = list()
 	huntodos = list()
 	studenten = students_o.all()
+
 	for s in studenten.values():
 		for n in s['notes']:
 			if n['done'] == 0:
@@ -37,6 +40,7 @@ def home():
 					huntodos.append(StudentJinja(s, Student.get_model()))
 				break
 
+
 	return render_template(
 		'home.html',
 		menuitem='home',
@@ -44,3 +48,35 @@ def home():
 		mijntodos=mijntodos,
 		huntodos=huntodos,
 	)
+
+@ep_home.get('/login')
+def login():
+	jus = UserSettings()
+	students_o = list()
+	todos = list()
+	mijntodos = list()
+	huntodos = list()
+
+	return render_template(
+		'home_login.html',
+		menuitem='home',
+		props=jus,
+		mijntodos=mijntodos,
+		huntodos=huntodos,
+	)
+
+@ep_home.post('/login')
+def login_post():
+	required = ['alias', 'password', 'inloggen']
+	for r in required:
+		if not r in request.form:
+			return redirect('/home/login')
+
+	alias = Casting.str_(request.form['alias'])
+	password = Casting.str_(request.form['password'])
+
+	jus = UserSettings()
+	if not jus.login(alias, password):
+		return redirect('/home/login')
+
+	return redirect('/home')

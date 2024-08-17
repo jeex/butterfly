@@ -16,11 +16,11 @@
                 {% set aa = all[a] %}
                 <div>
                     <label>
-                        <a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/kopie/{{ a }}">kopie</a>
+                        <a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/kopie/{{ a }}">copy</a>
                         <a style="{{ 'color: #888;' if aa._try('status') < 1 }}" class="asbutton" href="/views/{{ a }}">{{ a }}</a>
                     </label>
                     <div class="view-info" style="border: 1px solid {{ aa._try('color') }};">
-
+                        <!-- leeg voor default -->
                     </div>
                 </div>
                 <p style="border-bottom: 1px solid var(--menu); margin:0;"></p>
@@ -28,7 +28,7 @@
                     {% if a != 'default' and a in mijnviews %}
                         <div>
                             <label>
-                                <a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/kopie/{{ a }}">kopie</a>
+                                <a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/kopie/{{ a }}">copy</a>
                                 <a style="{{ 'color: #888;' if aa._try('status') < 1 }}" class="asbutton" href="/views/{{ a }}">{{ a }}</a>
                             </label>
                             <div class="view-info" style="border: 1px solid {{ aa._try('color') }};">
@@ -43,7 +43,7 @@
                     {% if a != 'default' and a not in mijnviews %}
                         <div>
                             <label>
-                                <a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/kopie/{{ a }}">kopie</a>
+                                <a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/kopie/{{ a }}">copy</a>
                                 <a style="{{ 'color: #888;' if aa._try('status') < 1 }}" class="asbutton" href="/views/{{ a }}">{{ a }}</a>
                             </label>
                             <div class="view-info" style="border: 1px solid {{ aa._try('color') }};">
@@ -70,7 +70,7 @@
                                     <tr>
                                         <th>{{ viewname }}</th>
                                         {% if canedit %}
-                                            <th style="text-align: right;">wis</th>
+                                            <th style="text-align: right;">erase</th>
                                         {% endif %}
                                     </tr>
                                     {% for field in minfields %}
@@ -88,9 +88,9 @@
                                     {% for field in single._try('fields') %}
                                     {% if not field in minfields %}
                                         <tr>
-                                            <td class="id-cell {{ 'fixedfield' if field in fixedfields }}" data-field="{{ field }}">{{ fields[field] }}</td>
+                                            <td class="id-cell {{ 'fixedfield' if field in fixedfields }} {{ 'cirfield' if field.startswith('c_') }}" data-field="{{ field }}">{{ fields[field].replace('c_', '').replace('t_', '') }}</td>
                                             {% if canedit %}
-                                                <td class="{{ 'fixedfield' if field in fixedfields }}" style="text-align:right;">
+                                                <td class="{{ 'fixedfield' if field in fixedfields }} {{ 'cirfield' if field.startswith('c_') }}" style="text-align:right;">
                                                     <input style="font-size: 0.8em;" type="submit" name="{{ field }}" value="&#x274c;" >
                                                 </td>
                                             {% endif %}
@@ -108,11 +108,11 @@
                                     <thead>
                                         <tr>
                                             <th>
-                                                groep
+                                                group
                                             </th>
                                             {% if canedit %}
                                                 <th style="text-align: right;">
-                                                    wis
+                                                    erase
                                                 </th>
                                             {% endif %}
                                         </tr>
@@ -139,7 +139,7 @@
                     <!-- breed velden en zo -->
                     <div style="width: calc(100% - 140px);">
                         {% if not canedit %}
-                            <h2>Je kunt de view [{{ viewname }}] niet wijzigen, wel kopiëren</h2>
+                            <h2>You cannot edit the view [{{ viewname }}], but you can copy it</h2>
                         {% elif canedit %}
                             <h2>View {{ viewname }} van: {{ single._try('alias') }}</h2>
                             <form method="post" class="single-form" action="/views/{{ viewname }}">
@@ -156,7 +156,7 @@
                                 <input type="submit" name="save" value="Opslaan" style="margin: 0 0.5em 0.25em 0;">
                             </form>
 
-                            <h2>Velden koppelen:</h2>
+                            <h2>Link Fields:</h2>
                             <form name="addfield" style="display: block" method="post" action="/views/edit/{{ viewname }}">
                                 <input type="hidden" name="fieldname" value="">
                                 <input type="hidden" name="add-field" value="1">
@@ -168,14 +168,23 @@
                                 {% endfor %}
                             </form>
 
-                            <h2>Veld maken</h2>
-                            <form class="single-form" name="customfield" style="display: block" method="post" action="/views/edit/{{ viewname }}">
+                            <h2>Make Color Field</h2>
+                            <form class="single-form" name="circularfield" style="display: block" method="post" action="/views/edit/{{ viewname }}">
                                 <input type="hidden" name="fieldnamelist" value="{{ single._try('fields')|join(',') }}">
-                                <input type="text" class="custom-field" name="fieldname" value="" style="width: 6em;" pattern=".{3,}" required >
-                                <input type="submit" name="new-custom-field" value="Maken">
+                                <input type="text" class="custom-field" name="fieldname" value="" style="width: 6em;" pattern=".{2,}" required >
+                                <input type="submit" name="new-cycle-field" value="Make">
                             </form>
 
-                            <h2>Groepen koppelen</h2>
+                            {% if True %}
+                                <h2>Make Text Field</h2>
+                                <form class="single-form" name="customfield" style="display: block" method="post" action="/views/edit/{{ viewname }}">
+                                    <input type="hidden" name="fieldnamelist" value="{{ single._try('fields')|join(',') }}">
+                                    <input type="text" class="custom-field" name="fieldname" value="" style="width: 6em;" pattern=".{2,}" required >
+                                    <input type="submit" name="new-text-field" value="Make">
+                                </form>
+                            {% endif %}
+
+                            <h2>Link Groups</h2>
                             <form name="addgroup" style="display: block" method="post" action="/views/group/{{ viewname }}">
                                 <input type="hidden" name="add-group" value="1">
                                 {% for k, v in groepen.items() %}
@@ -187,16 +196,16 @@
 
                             <h2>Handle with care</h2>
                             <form style="display: block;" method="post" action="/views/delete/{{ viewname }}">
-                                <input type="submit" name="delete" value="Verwijderen" style="background-color: red; color: white;">
+                                <input type="submit" name="delete" value="Delete" style="background-color: red; color: white;">
                             </form>
                         {% endif %}
                     </div>
                 {% else %}
                     <div style="text-align: left;">
-                        <h2>Maak een kopie van: {{ viewname }}</h2>
+                        <h2>Make a copy of: {{ viewname }}</h2>
                         <form class="single-form" name="kopie" method="post" action="/views/kopie/{{ viewname }}">
                             <input pattern=".{3,}" required type="text" name="newname">
-                            <input type="submit" name="kopieer" value="Kopieer">
+                            <input type="submit" name="kopieer" value="Copy">
                         </form>
                     </div>
                 {% endif %}
@@ -208,6 +217,7 @@
     {% if kopie is none %}
         let allfields = {{ fields|list|safe }};
     {% endif %}
+
     let make_veldnamen = function(asstring=true){
         if(asstring) {
             var lijst = 'id,firstname,lastname,'
@@ -235,15 +245,18 @@
     }
 
     let name_safe = function(erin, maxlen){
-        erin = erin.replaceAll(/[^a-zA-Z0-9_]/gi, '').substring(0,maxlen);
-        return erin
+        if(erin.startsWith('-')){
+            return '';
+        }
+        erin = erin.replaceAll(/[^a-zA-Z0-9_-]/gi, '').substring(0,maxlen);
+        return erin;
     }
 
     $(function(){
         // alleen een naam met kleine letters, cijfers en _
         $('input[name="newname"]').on('keyup', function(){
             var t = $(this).val();
-            t = name_safe(t, 10);
+            t = name_safe(t, 12);
             $(this).val(t);
         });
 
@@ -254,17 +267,17 @@
 
         $('form[name="deletefield"] input[type="submit"]').on('click', function(e){
             let btn_data = $(this).attr('name');
-            $('input[name="fieldname"]').val(btn_data);
+            $('form[name="deletefield"] input[name="fieldname"]').val(btn_data);
         });
 
         $('input.custom-field').on('keyup', function(){
             var t = $(this).val();
-            t = name_safe(t, 8);
+            t = name_safe(t, 10);
             $(this).val(t);
         });
 
         $('form[name="customfield"]').on('submit', function(e){
-            let vn = name_safe($('input.custom-field').val(), 8);
+            let vn = name_safe($('input.custom-field').val(), 10);
             if(allfields.includes(vn)){
                 e.preventDefault();
                 $('input.custom-field').val('').addClass('valop');
@@ -289,5 +302,7 @@
             order_and_send();
         }
     });
+
+    $('form[name="circularfield"] input[name="fieldname"]').focus();
     </script>
 </body>
