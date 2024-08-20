@@ -15,7 +15,7 @@ import appdirs
 import tkinter as tk
 from tkinter import filedialog, simpledialog, messagebox
 
-LOGGING = True
+LOGGING = False
 
 class Pickles:
 	@classmethod
@@ -77,6 +77,14 @@ class Mainroad:
 		user_settings['onedrive'] = odpath
 		Pickles.write(settings_path, user_settings)
 		# ready
+
+	@classmethod
+	def force_reset(cls):
+		settingspath = cls.get_settings_path()
+		try:
+			os.remove(settingspath)
+		except:
+			pass
 
 	@classmethod
 	def ask_onedrive_path(cls):

@@ -5,8 +5,10 @@ from helpers.general import Casting, Timetools, Mainroad
 from helpers.window import Window
 from helpers.singletons import UserSettings, Sysls
 
+DEVDEV = False
+
 app = Flask(__name__, template_folder='templates')
-app.config['DEBUG'] = True
+app.config['DEBUG'] = DEVDEV
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SECRET_KEY'] = 'nq023489cnJGH#F!'
 app.config["SESSION_PERMANENT"] = False
@@ -132,7 +134,6 @@ def asdatetime(i):
 	except:
 		return i
 
-
 @app.errorhandler(Exception)
 def handle_error(e):
 	Mainroad.loglog(f"error {e}")
@@ -140,6 +141,8 @@ def handle_error(e):
 	jus = UserSettings()
 	jus.set_prop('last_url', '')
 	return redirect('/home')
+
+
 @app.before_request
 def before_request():
 	rp = request.full_path

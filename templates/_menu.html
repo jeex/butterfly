@@ -5,7 +5,7 @@
             <li class="{{ 'actief'|safe if menuitem == 'home' }}"><a href="/home">home</a></li>
             {% endif %}
 
-            {% if props.magda(['beheer', 'administratie', 'admin']) %}
+            {% if props.magda(['beheer', 'docent', 'administratie', 'admin']) %}
             <li class="{{ 'actief'|safe if menuitem == 'studenten' }}"><a href="/studenten">students</a></li>
             {% endif %}
 
@@ -25,7 +25,7 @@
             <li class="{{ 'actief'|safe if menuitem == 'emails' }}"><a href="/emails">emails</a></li>
             {% endif %}
 
-            {% if props.magda(['admin']) %}
+            {% if props.magda(['beheer', 'admin']) %}
                 <li class="{{ 'actief'|safe if menuitem == 'beheer' }}"><a href="/beheer">manage</a></li>
             {% endif %}
 

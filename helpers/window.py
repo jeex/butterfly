@@ -1,13 +1,14 @@
 import webview
 import webview.menu as wm
 import sys
+import webbrowser
 
 from helpers.general import Mainroad
 
 class Window:
 	_venster = None
 	_wprops = [100, 100, 800, 400, False, False]
-	_title = 'CPNITS Butterfly'
+	_title = 'CPNITS Butterfly v1.04'
 
 	def __init__(self, app):
 		wprops = Mainroad.get_window_props()
@@ -48,17 +49,25 @@ class Window:
 		webview.start(menu=self.make_menu(), ssl=False)
 
 	def force_refresh(self):
-		pass
+		Mainroad.force_reset()
+		self.venster.destroy()
 
 	def stop(self):
+		self.on_venster_props()
 		self.venster.destroy()
+
+	def check_updates(self):
+		url = "https://cpnits.com/butterfly.html"
+		webbrowser.open(url, new=0, autoraise=True)
 
 	def make_menu(self):
 		return [
 			wm.Menu('Butterfly', [
 				wm.MenuAction('Close', self.stop),
-				# wm.MenuAction('Force Refresh & Close', self.force_refresh),
-			]),
+				wm.MenuAction('Force Refresh & Close', self.force_refresh),
+				wm.MenuAction('Check for updates', self.check_updates),
+				]
+	        ),
 		]
 		''' wm.Menu(
 						'Test Menu',

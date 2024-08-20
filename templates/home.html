@@ -13,24 +13,28 @@
         {% if props.magda(['docent']) %}
             <div style="display: flex; flex-direction: row; justify-content: space-between;">
                 <div style="width: {{ '49%'|safe if huntodos|length > 0 else '100%'|safe }};">
-                    <h2>Todo's for own students</h2>
-                    <ul>
-                        {% for t in mijntodos %}
-                            <li class="liggend"><a class="asbutton valop" href="/studenten/single/{{ t._id() }}">{{ t._id()|vier }}</a> {{ t._try('firstname') }} {{ t._try('lastname') }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-                {% if huntodos|length > 0 %}
-                    <div style="width: 49%;">
-                        <h2>Todo's for other students</h2>
-                        <ul>
-                            {% for t in huntodos %}
-                                <li class="liggend"><a class="asbutton" href="/studenten/single/{{ t._id() }}">{{ t._id()|vier }}</a> {{ t._try('firstname') }} {{ t._try('lastname') }} – {{ t._try('hun')|initials }}</li>
+                    <h2>Todo's for students</h2>
+                    {% for key, groep in groepen.items() %}
+                        {% if key in pergroep.keys() %}
+                            <h3 class="contrast" style="background-color: {{ groep['color'] }}">{{ groep['name'] }}</h3>
+                            <ul>
+                            {% for t in pergroep[key] %}
+                                <li class="liggend"><a class="asbutton valop" href="/studenten/single/{{ t._id() }}">{{ t._id()|vier }}</a> {{ t._try('firstname') }} {{ t._try('lastname') }}</li>
                             {% endfor %}
-                        </ul>
-                    </div>
-                {% endif %}
+                            </ul>
+                        {% endif %}
+                    {% endfor %}
+                </div>
             </div>
         {% endif %}
     </main>
+<script>
+    $(function(){
+        $('.contrast').each(function(){
+            let kleur = $(this).css('background-color');
+            let contra = calc_contra_color(kleur)
+            $(this).css('color', contra);
+        });
+    });
+</script>
 </body>

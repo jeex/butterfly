@@ -79,7 +79,7 @@
 
                             {% elif f == 'grade' %}
                                 <td class="dblignore" data-csv="{{ s._try('grade') }}" data-th="grade">
-                                    <input type="number" step="10" min="0" max="10" name="grade" value="{{ s._try('grade') }}" style="width: 5em; font-size: 1em; padding: 0.1em;">
+                                    <input type="number" step="10" min="0" max="100" name="grade" value="{{ s._try('grade') }}" style="width: 5em; font-size: 1em; padding: 0.1em;">
                                 </td>
 
                             {% elif f in ['grade_ts', 'created_ts'] %}

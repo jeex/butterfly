@@ -117,7 +117,8 @@ def studenten_groep(groepnr, viewname=''):
 	)
 
 @ep_groepen.post('/<int:groepnr>/<path:viewname>')
-def studenten_groep_post(groepnr, viewname):
+@ep_groepen.post('/<int:groepnr>')
+def studenten_groep_post(groepnr, viewname=''):
 	if not IOstuff.check_required_keys(request.form, ['what', 'field-name', 'field-value', 'student-id']):
 		return redirect(f"/groepen/{groepnr}/{viewname}")
 

@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, redirect, request, templating
 import os
+from pprint import pprint as ppp
 import sys
-from helpers.singletons import UserSettings, Students
+from helpers.singletons import UserSettings, Students, Sysls
 from helpers.general import Casting, Mainroad
 
 from endpoint.studenten import (
@@ -28,25 +29,35 @@ def home():
 
 	students_o = Students()
 	todos = list()
-	mijntodos = list()
-	huntodos = list()
+	pergroep = dict()
 	studenten = students_o.all()
-
+	sysls_o = Sysls()
+	groepen = dict(sysls_o.get_sysl('s_group'))
+	ppp(groepen)
 	for s in studenten.values():
 		for n in s['notes']:
 			if n['done'] == 0:
+				if not s['s_group'] in pergroep:
+					pergroep[s['s_group']] = list()
+				pergroep[s['s_group']].append(StudentJinja(s, Student.get_model()))
+
+				'''
 				if n['alias'] == jus.alias():
 					mijntodos.append(StudentJinja(s, Student.get_model()))
 				elif jus.magda(['admin']):
 					s['hun'] = n['alias']
 					huntodos.append(StudentJinja(s, Student.get_model()))
 				break
+				'''
 
 
 	return render_template(
 		'home.html',
 		menuitem='home',
 		props=jus,
-		mijntodos=mijntodos,
-		huntodos=huntodos,
+		pergroep=pergroep,
+		groepen=groepen,
+
+		# mijntodos=mijntodos,
+		# huntodos=huntodos,
 	)

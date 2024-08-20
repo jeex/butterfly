@@ -11,7 +11,7 @@
             {% if student._try('s_group')|int > 1 and props.magda(['docent', 'beheer'])%}
                 <a  style="background-color: {{ student._s_item('s_group')['color'] }}" class="asbutton" href="/groepen/{{ student._try('s_group') }}">to {{ student._s_item('s_group')['name'] }}</a>
             {% endif %}
-            <a class="asbutton" href="/studenten/{{ student._try('filter') }}">to {{ student._try('filter') }}</a>
+            <a class="asbutton" href="/studenten/{{ student._try('filter') }}">to {{ student._try('filter')|filtername }}</a>
             {% if props.magda(['administratie', 'beheer']) %}
                 <a style="background-color: var(--menu); color: black;" class="asbutton" href="/studenten/new">new student</a>
                 <a style="background-color: dodgerblue; color: white;" class="asbutton" href="/studenten/import">import list JB</a>
