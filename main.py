@@ -132,7 +132,7 @@ def asdatetime(i):
 	except:
 		return i
 
-'''
+
 @app.errorhandler(Exception)
 def handle_error(e):
 	Mainroad.loglog(f"error {e}")
@@ -140,8 +140,6 @@ def handle_error(e):
 	jus = UserSettings()
 	jus.set_prop('last_url', '')
 	return redirect('/home')
-'''
-
 @app.before_request
 def before_request():
 	rp = request.full_path

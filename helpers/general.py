@@ -195,11 +195,15 @@ class Mainroad:
 	@classmethod
 	def set_window_props(cls, window_props):
 		propspad = cls.get_settings_path()
-		props = Pickles.read(propspad)
-		if props is None:
-			cls.loglog('windows props setting goes wrong')
-		props['window'] = window_props
-		Pickles.write(propspad, props)
+		# to avoid overwriting settings at a high pase
+		try:
+			props = Pickles.read(propspad)
+			if props is None:
+				cls.loglog('windows props setting goes wrong')
+			props['window'] = window_props
+			Pickles.write(propspad, props)
+		except:
+			pass
 
 	@classmethod
 	def loglog(cls, t: str):

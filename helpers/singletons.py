@@ -42,7 +42,6 @@ class Sysls(metaclass=SyslsMeta):
 		's_group',
 		's_status',
 		's_circular',
-		# 's_user',
 	]
 	_sysmem = dict()
 	error_in_sysmem = False
