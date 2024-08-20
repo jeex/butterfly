@@ -137,3 +137,20 @@ for id, val in all.items():
 		print()
 		ppp(val)
 '''
+
+# make user settings
+'''
+	def zzz_make_valid(self):
+		# for installment purposes only
+		# _rollen = ['administratie', 'docent', 'beheer', 'admin']
+
+		d = dict(
+			Victor = {'password': 'nr1', 'magda': ['administratie', 'docent', 'beheer', 'admin']},
+			Jaqueline = {'password': 'bnuskvbdhyswk', 'magda': ['administratie', 'docent', 'beheer']},
+			Marcel = {'password': 'sxtdncdklchnbd', 'magda': ['docent']},
+			Iris = {'password': 'trwnvcksghdes', 'magda': ['docent']},
+			Sarah = {'password': 'tgjklncdhsdlobg', 'magda': ['docent']},
+		)
+		print('make', self._userspath)
+		Pickles.write(self._userspath, d)
+	'''

@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, redirect, request, templating
 import os
+import sys
 from helpers.singletons import UserSettings, Students
 from helpers.general import Casting, Mainroad
 
@@ -22,7 +23,8 @@ menuitem = 'home'
 def home():
 	jus = UserSettings()
 	if not jus._is():
-		return redirect('/home/login')
+		Mainroad.loglog('Iets mis met login')
+		sys.exit(1)
 
 	students_o = Students()
 	todos = list()
@@ -48,35 +50,3 @@ def home():
 		mijntodos=mijntodos,
 		huntodos=huntodos,
 	)
-
-@ep_home.get('/login')
-def login():
-	jus = UserSettings()
-	students_o = list()
-	todos = list()
-	mijntodos = list()
-	huntodos = list()
-
-	return render_template(
-		'home_login.html',
-		menuitem='home',
-		props=jus,
-		mijntodos=mijntodos,
-		huntodos=huntodos,
-	)
-
-@ep_home.post('/login')
-def login_post():
-	required = ['alias', 'password', 'inloggen']
-	for r in required:
-		if not r in request.form:
-			return redirect('/home/login')
-
-	alias = Casting.str_(request.form['alias'])
-	password = Casting.str_(request.form['password'])
-
-	jus = UserSettings()
-	if not jus.login(alias, password):
-		return redirect('/home/login')
-
-	return redirect('/home')

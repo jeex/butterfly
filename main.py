@@ -28,7 +28,7 @@ log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
 if not app.config['initialized']:
-	Mainroad.set_new_onedrive()
+	Mainroad.initialize()
 	app.config['initialized'] = True
 
 # ============= JINJA FILTERS =============
@@ -132,7 +132,7 @@ def asdatetime(i):
 	except:
 		return i
 
-
+'''
 @app.errorhandler(Exception)
 def handle_error(e):
 	Mainroad.loglog(f"error {e}")
@@ -140,7 +140,7 @@ def handle_error(e):
 	jus = UserSettings()
 	jus.set_prop('last_url', '')
 	return redirect('/home')
-
+'''
 
 @app.before_request
 def before_request():

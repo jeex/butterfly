@@ -6,15 +6,16 @@ import os
 from urllib.parse import quote_plus as kwoot
 import re
 import pickle
-
+import sys
+from pprint import pprint as ppp
 from ftplib import FTP
 import io
 
 import appdirs
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, simpledialog, messagebox
 
-LOGGING = False
+LOGGING = True
 
 class Pickles:
 	@classmethod
@@ -46,18 +47,82 @@ class Mainroad:
 	forca = list()
 
 	@classmethod
+	def initialize(cls):
+		# get user settings path
+		settings_path = cls.get_settings_path()
+		# get user settings
+		user_settings = d = Pickles.read(settings_path)
+		if user_settings is None:
+			# ask one drive path first, can only return proper path
+			odpath = cls.ask_onedrive_path()
+			newus = dict(
+				window=[],
+				onedrive=odpath,
+				magda = ['docent'],
+				alias = '',
+			)
+			# and login with simple dialog, alsways gives back proper userdata
+			user = cls.ask_login(odpath)
+			newus['magda'] = user['magda']
+			newus['alias'] = user['alias']
+			Pickles.write(settings_path, newus)
+			return
+
+		# if not odname in settings
+		# check if proper odname in settings (can change)
+		if os.path.isdir(user_settings['onedrive']):
+			return
+
+		odpath = cls.ask_onedrive_path()
+		user_settings['onedrive'] = odpath
+		Pickles.write(settings_path, user_settings)
+		# ready
+
+	@classmethod
+	def ask_onedrive_path(cls):
+		# asks for and returns path of one-drive, using Tk
+		while True:
+			root = tk.Tk()
+			root.withdraw()
+			odpath = filedialog.askdirectory(title='Open OneDrive dir _BUTTERFLY')
+			if odpath is None or odpath == '': # cancel
+				cls.exit_message('No Open OneDrive dir _BUTTERFLY given.')
+
+			if not odpath.endswith('_BUTTERFLY'):
+				continue
+			# correct path, test it, EXIT if wrong
+			cls.force_access('onedrive', odpath)
+			# return path
+			return odpath
+
+	@classmethod
+	def ask_login(cls, odpath) -> dict:
+		users = Pickles.read(f"{odpath}/system/s_rs.pickle")
+		while True:
+			root = tk.Tk()
+			root.withdraw()
+			password = simpledialog.askstring('Password', 'Enter your password')
+			if password is None or password.strip() == '':
+				cls.exit_message('No Password given.')
+
+			# check give password
+			for user, userdata in users.items():
+				if userdata['password'] == password:
+					userdata['alias'] = user
+					return userdata
+			# repeat if false
+
+	@classmethod
 	def force_access(cls, name, accessdir):
 		if name in cls.forca:
 			return
-
 		try:
 			with open(os.path.join(accessdir, 'access.txt'), 'a') as f:
 				f.write(f"Force access to {name} \n\t{accessdir} \n\t@ {Timetools.now_string()}")
 				cls.loglog(f"Force access to {name} \n\t{accessdir} \n\t@ {Timetools.now_string()}")
 				cls.forca.append(name)
 		except Exception as e:
-			cls.loglog(f"Force access to {name} failed \n\t{e}")
-			return
+			cls.exit_message(f"Force access to {name} failed \n\t{e}")
 		try:
 			pass
 			os.remove(os.path.join(accessdir, 'access.txt'))
@@ -66,63 +131,35 @@ class Mainroad:
 		cls.loglog(f"Force access to {name} GELUKT")
 
 	@classmethod
-	def get_settings_path(cls):
-		# force access
-		cls.force_access('settings', os.path.join(appdirs.user_config_dir()))
-		# if not, make one
+	def exit_message(cls, message: str):
+		root = tk.Tk()
+		root.withdraw()
+		tk.messagebox.showinfo(title='Butterfly Exit', message=f'Butterfly Exit: {message}')
+		sys.exit(1)
+
+	@classmethod
+	def get_settings_path(cls) -> str:
+		# no testing involved
 		settings_dir = os.path.join(appdirs.user_config_dir(), 'JeexButterfly')
 		try:
-			if not os.path.exists(settings_dir):
-				os.makedirs(settings_dir)
-		except Exception as e:
-			Mainroad.loglog(str(e))
+			os.remove(os.path.join(settings_dir, 'butterfly_props.pickle'))
+		except:
 			pass
-		settings_pickle_path = os.path.join(settings_dir, 'butterfly_props.pickle')
-
-		if not os.path.isfile(settings_pickle_path):
-			d = dict(
-				window=[],
-				onedrive='',
-			)
-			Pickles.write(settings_pickle_path, d)
-			return settings_pickle_path
-
-		d = Pickles.read(settings_pickle_path)
-		if d is None:
-			d = dict(
-				window=[],
-				onedrive='',
-			)
-			Pickles.write(settings_pickle_path, d)
-			return settings_pickle_path
-
-		if 'window' in d and 'onedrive' in d:
-			return settings_pickle_path
-
-		if not 'window' in d:
-			d['window'] = []
-			Pickles.write(settings_pickle_path, d)
-			return settings_pickle_path
-
-		if not 'onedrive' in d:
-			d['onedrive'] = ''
-			Pickles.write(settings_pickle_path, d)
-			return settings_pickle_path
+		settings_path = os.path.join(settings_dir, 'butterfly.pickle')
+		return settings_path
 
 	@classmethod
 	def get_onedrive_path(cls):
+		# only for use after first init.
+		settings_path = cls.get_settings_path()
+		settings = Pickles.read(settings_path)
+		if settings is None:
+			cls.exit_message('ERROR: No Settings found [1].')
 		try:
-			settings_path = cls.get_settings_path()
-			settings = Pickles.read(settings_path)
-			onedrive_path = settings[f'onedrive']
-
-			if onedrive_path != '':
-				cls.force_access('onedrive', onedrive_path)
-
-			return onedrive_path
+			return settings[f'onedrive']
 		except:
 			# geen onedrive in settings
-			return None
+			cls.exit_message('ERROR: No OneDrive found [2].')
 
 	@classmethod
 	def get_system_path(cls):
@@ -159,41 +196,10 @@ class Mainroad:
 	def set_window_props(cls, window_props):
 		propspad = cls.get_settings_path()
 		props = Pickles.read(propspad)
-		if not props is None:
-			props['window'] = window_props
-			Pickles.write(propspad, props)
-		else:
-			d = dict(
-				window=[],
-				onedrive='',
-			)
-			Pickles.write(propspad, d)
-
-	@classmethod
-	def set_new_onedrive(cls):
-		# from main thread
-		# print('INITIALIZING')
-		odname = cls.get_onedrive_path()
-		# print('huidige pad', odname)
-		if not odname is None:
-			if odname.endswith('_BUTTERFLY') and os.path.isdir(odname):
-				# print('pad klopt')
-				return
-		while True:
-			root = tk.Tk()
-			root.withdraw()
-			odname = filedialog.askdirectory()
-			# print('opgegeven', odname)
-			if odname is None:
-				continue
-			if not odname.endswith('_BUTTERFLY'):
-				continue
-			break
-		pp = cls.get_settings_path()
-		p = Pickles.read(pp)
-		p['onedrive'] = odname
-		Pickles.write(pp, p)
-		# print('opgeslagen', p)
+		if props is None:
+			cls.loglog('windows props setting goes wrong')
+		props['window'] = window_props
+		Pickles.write(propspad, props)
 
 	@classmethod
 	def loglog(cls, t: str):

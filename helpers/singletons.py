@@ -757,83 +757,41 @@ class UserSettings(metaclass=UserSetingsMeta):
 	_rollen = list()
 	_alias = ''
 	_title = ''
-	_userspath = ''
 	_users = dict()
 
 	def __init__(self):
 		self.init_props()
 
 	def _is(self) -> bool:
-		# check if users exist
-		if not os.path.isfile(self._userspath):
-			return False
-
 		# check if this user has user settings
-		if not 'user' in self._props:
+		if not 'alias' in self._props or not 'magda' in self._props:
 			return False
-
 		# known user with settings and login in own computer
 		return True
-
-	def login(self, alias: str, password: str) -> bool:
-		try:
-			r = self._users[alias]['password'] == password
-			if not r:
-				return False
-			user = self._users[alias].copy()
-		except:
-			return False
-
-		# logged in, now add data to self._props and self._alias, self._rollen
-		self._alias = alias
-		self._rollen = user['magda']
-		user['alias'] = alias
-		#remember for next time
-		self.set_prop('user', user)
-		return True
-
-	'''
-	def zzz_make_valid(self):
-		# for installment purposes only
-		# _rollen = ['administratie', 'docent', 'beheer', 'admin']
-
-		d = dict(
-			Victor = {'password': 'nr1', 'magda': ['administratie', 'docent', 'beheer', 'admin']},
-			Jaqueline = {'password': 'bnuskvbdhyswk', 'magda': ['administratie', 'docent', 'beheer']},
-			Marcel = {'password': 'sxtdncdklchnbd', 'magda': ['docent']},
-			Iris = {'password': 'trwnvcksghdes', 'magda': ['docent']},
-			Sarah = {'password': 'tgjklncdhsdlobg', 'magda': ['docent']},
-		)
-		print('make', self._userspath)
-		Pickles.write(self._userspath, d)
-	'''
 
 	def init_props(self):  # PROPS pad en OD pad EN het od pad is te vinden in de props pickle
 		try:
 			self._settings_path = Mainroad.get_settings_path()
 			self._props = Pickles.read(self._settings_path)
 		except Exception as e:
-			Mainroad.loglog(f"Usersettings init-props settings {e}")
-			sys.exit(f'Kon geen settingsfile make of lezen')
+			Mainroad.loglog(f'Kon geen settingsfile make of lezen')
+			sys.exit(1)
+
 		if self._settings_path == '' \
 				or self._settings_path is None \
 				or self._props is None:
-			sys.exit(f'Kon geen settingsfile make of lezen op locatie: {self._settings_path}')
-
+			Mainroad.loglog(f'Kon geen settingsfile make of lezen op locatie: {self._settings_path}')
+			sys.exit(1)
 		try:
 			self._onedrive_path = Mainroad.get_onedrive_path()
 		except Exception as e:
-			Mainroad.loglog(f"Usersettings init-props onedrive {e}")
-			sys.exit(f'Kon geen onedrive vinden of lezen')
-
-		self._userspath = os.path.join(Mainroad.get_onedrive_path(), 'system', 's_rs.pickle')
-		self._users = Pickles.read(self._userspath)
+			Mainroad.loglog(f'Kon geen onedrive vinden of lezen')
+			sys.exit(1)
 
 		# user if known
 		try:
-			user = self.get_prop('user')
-			self._alias = user['alias']
-			self._rollen = user['magda']
+			self._alias = self.get_prop('alias')
+			self._rollen = self.get_prop('magda')
 		except:
 			pass
 
@@ -871,10 +829,6 @@ class UserSettings(metaclass=UserSetingsMeta):
 		self._props[key] = val  # update or create
 		Pickles.write(self._settings_path, self._props)
 		self.init_props()
-
-	def force_refresh(self):
-		Pickles.delete(self._settings_path)
-		self._props = dict()
 
 	def get_props(self):
 		return self._props
