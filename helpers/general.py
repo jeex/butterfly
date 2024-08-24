@@ -116,7 +116,9 @@ class Mainroad:
 		path = os.path.join(cls.get_onedrive_path(), 'DO_NOT_DELETE.txt')
 		try:
 			with open(path, 'r') as f:
-				return f.read()
+				lines = f.readlines()
+				lines = lines[:-1]
+			return ' '.join(lines)
 		except:
 			return None
 

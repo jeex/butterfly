@@ -41,7 +41,8 @@ def home():
 				pergroep[s['s_group']].append(StudentJinja(s, Student.get_model()))
 
 	bericht = Mainroad.get_message()
-	print(bericht)
+	if bericht == '':
+		bericht = None
 
 	return render_template(
 		'home.html',
