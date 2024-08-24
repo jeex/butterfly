@@ -5,10 +5,8 @@ from helpers.general import Casting, Timetools, Mainroad
 from helpers.window import Window
 from helpers.singletons import UserSettings, Sysls
 
-DEVDEV = False
-
 app = Flask(__name__, template_folder='templates')
-app.config['DEBUG'] = DEVDEV
+app.config['DEBUG'] = Mainroad.devdev
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SECRET_KEY'] = 'nq023489cnJGH#F!'
 app.config["SESSION_PERMANENT"] = False
@@ -29,11 +27,16 @@ app.url_map.strict_slashes = False
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
-if not app.config['initialized']:
-	Mainroad.initialize()
-	app.config['initialized'] = True
-
 # ============= JINJA FILTERS =============
+@app.template_filter('gradecss')
+def gradecss(grade):
+	grade = Casting.int_(grade, default=0)
+	if grade >= 55:
+		return 'grade-passed'
+	elif grade >= 10:
+		return 'grade-failed'
+	return 'grade-not'
+
 @app.template_filter('filtername')
 def filtername(name):
 	fnames = {
@@ -134,13 +137,14 @@ def asdatetime(i):
 	except:
 		return i
 
-@app.errorhandler(Exception)
-def handle_error(e):
-	Mainroad.loglog(f"error {e}")
-	Mainroad.loglog(f"\t{request.full_path}")
-	jus = UserSettings()
-	jus.set_prop('last_url', '')
-	return redirect('/home')
+if not Mainroad.devdev:
+	@app.errorhandler(Exception)
+	def handle_error(e):
+		Mainroad.loglog(f"error {e}")
+		Mainroad.loglog(f"\t{request.full_path}")
+		jus = UserSettings()
+		jus.set_prop('last_url', '')
+		return redirect('/home')
 
 
 @app.before_request
@@ -156,9 +160,15 @@ def before_request():
 	rp = rp.rstrip('/')
 
 	if jus.is_new():
+		# after startup of butterfly, go to last url
 		jus._started = False
+		jus.set_prop('prev_url', '')
+		# get the previouw url and go there (so it is current as well)
 		lasturl = jus.get_prop('last_url', default='/home')
-		if not lasturl in ['', '/']:
+		if lasturl in ['', '/', '/home']:
+			return redirect('/home')
+		else:
+			jus.set_prop('prev_url', '')
 			return redirect(lasturl)
 	else:
 		# don't store paths with args
@@ -167,6 +177,16 @@ def before_request():
 		elif len(request.form) > 0:
 			pass
 		else:
+			lasturl = jus.get_prop('last_url', default='')
+			print(lasturl)
+			print(rp)
+			if lasturl == rp:
+				pass
+			elif lasturl in ['', '/', '/home']:
+				jus.set_prop('prev_url', '')
+			else:
+				jus.set_prop('prev_url', lasturl)
+			# remember the current url
 			jus.set_prop('last_url', rp)
 
 
@@ -184,7 +204,7 @@ def add_header(res):
 
 @app.get('/')
 def index():
-	return redirect('home')
+	return redirect('/home')
 
 from endpoint.home import ep_home
 app.register_blueprint(ep_home)
@@ -211,7 +231,13 @@ from endpoint.website import ep_website
 app.register_blueprint(ep_website)
 
 
-if False:
+
+# IMPORTANT login etc.
+if not app.config['initialized']:
+	Mainroad.before_webview_start()
+	app.config['initialized'] = True
+
+if False and Mainroad.devdev:
 	app.run(port=5000)
 else:
 	Window(app)

@@ -30,12 +30,9 @@ ep_email = Blueprint(
 alle_emails = ['confirm', 'grade'] #, 'hunt']
 placeholders = ['name', 'minor', 'period', 'year', 'ec', 'grade', 'password']
 
-@ep_email.get('/')
-def emails():
-	return redirect('/emails/confirm')
-
 @ep_email.get('/<path:name>')
-def single_confirm(name: str):
+@ep_email.get('/')
+def single_confirm(name: str = 'confirm'):
 	jus = UserSettings()
 	emails_o = Emails()
 	mail = emails_o.get_single(name)

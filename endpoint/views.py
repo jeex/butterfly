@@ -33,20 +33,20 @@ class View(BaseClass):
 		d['name'] = ''
 		return d
 
+@ep_views.get('/<int:viewid>/<path:copie>')
+@ep_views.get('/<int:viewid>')
 @ep_views.get('/')
-def index():
-	return redirect('/views/default')
+def view(viewid=0, copie=None):
+	copie = not copie is None
 
-@ep_views.get('/<path:singlename>')
-def view(singlename):
 	views_o = Views()
-	all = views_o.get()
+	if viewid == 0:
+		viewid = views_o.get_defaultkey()
+	allviews = views_o.get()
 	mijnviews = views_o.mijn_views()
-	single = None
-	for key, val in all.items():
-		if key == singlename:
-			single = jinja_object(val)
-		all[key] = jinja_object(val)
+	singleview = views_o.get_single_by_key(viewid)
+	if singleview is None:
+		return redirect(f'/views/{views_o.get_defaultkey()}')
 
 	# fieldnames are standard db field names
 	fieldnames = list(Student.get_empty().keys())
@@ -60,8 +60,8 @@ def view(singlename):
 		fields[s] = Student.get_nicename(s)
 	# fields now contains all the standard available fields for a view
 
-	# single._try(fields) contains the fields in this single view
-	for s in single._try('fields', default=[]):
+	# single[fields] contains the fields in this single view
+	for s in singleview['fields']:
 		if s in fieldnames:
 			fields[s] = Student.get_nicename(s)
 		else:
@@ -71,53 +71,66 @@ def view(singlename):
 	sysls_o = Sysls()
 	# these are the available groups
 	groepen = sysls_o.get_sysl('s_group')
-	for g in list(groepen.keys()):
-		if groepen[g]['status'] != 1:
-			del(groepen[g])
-	# ppp(groepen)
+
+	singleview = jinja_object(singleview)
+	defaultview = None
+	for key in allviews:
+		if key == views_o.get_defaultkey():
+			defaultview = jinja_object(allviews[key])
+		else:
+			allviews[key] = jinja_object(allviews[key])
+
+	del(allviews[views_o.get_defaultkey()])
 
 	return render_template(
 		'views.html',
 		menuitem=menuitem,
 		props=UserSettings(),
-		all=all,
-		single=single,
-		kopie=None,
+		all=allviews,
+		single=singleview,
+		default=defaultview,
+		mijnviews=mijnviews,
+		kopie=copie,
 		fields=fields,
 		fixedfields=fieldnames,
 		groepen=groepen,
-		mijnviews=mijnviews,
 	)
 
-@ep_views.post('/<path:singlename>')
-def views_post(singlename):
+# for editing the view itself (topright in html)
+@ep_views.post('/<int:viewid>')
+def views_post(viewid):
 	try:
 		color = Casting.str_(request.form['color'], '#ffffff')
 		status = Casting.int_(request.form['status'], 1)
-	except:
-		return redirect(f'/views/{singlename}')
+		name = Casting.str_(request.form['changename'], '#ffffff')
+	except Exception as e:
+		print(e)
+		return redirect(f'/views/{viewid}')
 
 	views_o = Views()
-	single = views_o.get_single(singlename)
+	single = views_o.get_single_by_key(viewid)
 	single['color'] = color
 	single['status'] = status
+	single['name'] = name
+	print('single', single)
 	views_o.make_view(single)
-	return redirect(f"/views/{singlename}")
+	return redirect(f"/views/{viewid}")
 
-@ep_views.post('/edit/<path:singlename>')
-def view_post(singlename):
+# for editing stuff in a view
+@ep_views.post('/edit/<int:viewid>')
+def view_post(viewid):
 	views_o = Views()
-	single = views_o.get_single(singlename)
+	single = views_o.get_single_by_key(viewid)
 	if single is None:
 		return redirect('/views/default')
 
 	if not ('fieldname' in request.form and 'fieldnamelist' in request.form):
-		return redirect(f"/views/{singlename}")
+		return redirect(f"/views/{viewid}")
 
 	try:
 		veldnamen = request.form['fieldnamelist'].split(',')
 	except:
-		return redirect(f"/views/{singlename}")
+		return redirect(f"/views/{viewid}")
 	veldnaam = Casting.str_(request.form['fieldname'], '')
 
 	if veldnaam != '':
@@ -137,64 +150,45 @@ def view_post(singlename):
 
 	single['fields'] = veldnamen
 	views_o.make_view(single)
-	return redirect(f"/views/{singlename}")
+	return redirect(f"/views/{viewid}")
 
-@ep_views.post('/delete/<path:singlename>')
-def delete_post(singlename):
+# for deleting view
+@ep_views.post('/delete/<int:viewid>')
+def delete_post(viewid):
 	views_o = Views()
-	if not singlename in ['default', '']:
-		views_o.delete(singlename)
-	return redirect('/views/default')
+	views_o.delete(viewid)
+	return redirect(f'/views/{views_o.get_defaultkey()}')
 
-@ep_views.get('/kopie/<path:copyname>')
-def kopie(copyname):
-	views_o = Views()
-	all = views_o.get()
-	single = None
-	for key, val in all.items():
-		if key == copyname:
-			single = jinja_object(val)
-		all[key] = jinja_object(val)
-
-	return render_template(
-		'views.html',
-		menuitem=menuitem,
-		props=UserSettings(),
-		all=all,
-		single=single,
-		kopie=copyname,
-		fields=None,
-	)
-
-@ep_views.post('/kopie/<path:copyname>')
-def kopie_post(copyname):
+@ep_views.post('/kopie/<int:copyid>')
+def kopie_post(copyid):
 	jus = UserSettings()
 	views_o = Views()
 	try:
 		newname = Casting.name_safe(request.form['newname'], True)
 		if newname == '':
-			return redirect('/views/default')
+			return redirect(f'/views/{views_o.get_defaultkey()}')
 		if newname in views_o.get():
-			return redirect('/views/default')
+			return redirect(f'/views/{views_o.get_defaultkey()}')
 	except:
-		return redirect('/views/default')
+		return redirect(f'/views/{views_o.get_defaultkey()}')
 
 	# make new views with newname
-	newview = views_o.get_single(copyname)
+	newview = views_o.get_single_by_key(copyid)
+	newid = Timetools.now_secs()
 	newview['name'] = newname
 	newview['alias'] = jus.alias()
-	newview['created_ts'] = Timetools.now_secs()
+	newview['created_ts'] = newid
 	newview['groups'] = list()
 	newview['color'] = '#ffffff'
 	views_o.make_view(newview)
-	return redirect(f"/views/{newname}")
+	return redirect(f"/views/{newid}")
 
-@ep_views.post('/group/<path:singlename>')
-def group_post(singlename):
+@ep_views.post('/group/<int:viewid>')
+def group_post(viewid):
 	views_o = Views()
-	view = views_o.get_single(singlename)
+	view = views_o.get_single_by_key(viewid)
 	if view is None:
-		return redirect('/views/default')
+		return redirect(f'/views/{views_o.get_defaultkey()}')
 
 	if not 'groups' in view:
 		view['groups'] = list()
@@ -205,7 +199,7 @@ def group_post(singlename):
 			continue
 		groep_id = Casting.int_(item, default=0)
 	if groep_id == 0:
-		return redirect(f"/views/{singlename}")
+		return redirect(f"/views/{viewid}")
 
 	if 'add-group' in request.form:
 		view['groups'].append(groep_id)
@@ -213,5 +207,5 @@ def group_post(singlename):
 		view['groups'].remove(groep_id)
 
 	views_o.make_view(view)
-	return redirect(f"/views/{singlename}")
+	return redirect(f"/views/{viewid}")
 

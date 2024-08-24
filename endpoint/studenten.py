@@ -1,7 +1,7 @@
 import re
 import os
 from copy import deepcopy
-
+from pprint import pprint as ppp
 from flask import redirect, request, Blueprint, render_template
 
 from helpers.general import Casting, Timetools, IOstuff, ListDicts, JINJAstuff, BaseClass
@@ -177,12 +177,9 @@ ep_studenten = Blueprint(
 
 menuitem = 'studenten'
 
-@ep_studenten.get('')
-def tofilter():
-	return redirect('/studenten/studenten')
-
 @ep_studenten.get('/<path:filter>')
-def studenten(filter):
+@ep_studenten.get('/')
+def studenten(filter='studenten'):
 	students_o = Students()
 	# get and set filter
 	sta, fil, tel, act = filter_stuff()
@@ -372,16 +369,12 @@ def single_new_post(id):
 	newstudent['password'] = students_o.new_password(newstudent['created_ts'])
 	if newstudent['s_origin'] == 1:
 		newstudent['s_uni'] = 1
-
 	# opslaan
-
 	students_o.make_student_pickle(id, newstudent)
-
 	# make student dir
 	fix_student_dir(id, None, newstudent)
 	# show student dir
 	students_o.open_student_dir(id)
-
 	return redirect(f"/studenten/single/{id}")
 
 @ep_studenten.post('/single/<int:id>')
@@ -397,13 +390,39 @@ def single_edit_post(id):
 
 		# eventualy fix student dir issues
 		fix_student_dir(id, student, edited)
-
 		return redirect(f"/studenten/single/{id}")
 
 	elif 'delete' in request.form:
 		# on delete show student folder
 		students_o.open_student_dir(id)
 		students_o.delete_student_pickle(id)
+
+	elif 'kopieer' in request.form:
+		# make empty copy of student
+		kopie = Student.get_empty()
+		kopie['created_ts'] = Timetools.now_secs()
+		kopie['email'] = student['email']
+		kopie['firstname'] = student['firstname']
+		kopie['lastname'] = student['lastname']
+		kopie['s_gender'] = student['s_gender']
+		kopie['s_lang'] = student['s_lang']
+		kopie['s_origin'] = student['s_origin']
+		kopie['s_program'] = student['s_program']
+		kopie['s_uni'] = student['s_uni']
+		# dit moet worden aangepast door user
+		kopie['s_year'] = student['s_year']
+		kopie['s_term'] = student['s_term']
+		kopie['password'] = students_o.new_password(kopie['created_ts'])
+		kopie['id'] = students_o.new_student_id()
+		# get current year
+		print('kopieer')
+		# opslaan
+		students_o.make_student_pickle(kopie['id'], kopie)
+		# make dir
+		fix_student_dir(kopie['id'], None, kopie)
+		# show student dir
+		students_o.open_student_dir(kopie['id'])
+		return redirect(f"/studenten/single/{kopie['id']}")
 
 	return redirect(f"/studenten/registratie")
 
@@ -722,7 +741,10 @@ def crunch_student(s, req):
 		if 'grade' in s:
 			if newstudent['grade'] != s['grade']:
 				# new grade
-				newstudent['grade_ts'] = Timetools.now_secs()
+				if newstudent['grade'] == 0:
+					newstudent['grade_ts'] = 0
+				else:
+					newstudent['grade_ts'] = Timetools.now_secs()
 			else:
 				newstudent['grade'] = s['grade']
 		else:

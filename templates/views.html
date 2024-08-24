@@ -1,6 +1,7 @@
 {% include '_head.html' %}
 <link rel="stylesheet" href="/static/views.css" />
 {% set viewname = single._try('name') %}
+{% set viewkey = single._try('created_ts') %}
 {% set minfields = ['id', 'firstname', 'lastname'] %}
 {% set canedit = (props.magda(['docent'], alias=single._try('alias'))) and viewname != 'default' %}
 </head>
@@ -12,39 +13,39 @@
             <div>
                 <div class="single-form">
                 <h2 style="margin-bottom: 1em;">Views</h2>
-                {% set a = 'default' %}
-                {% set aa = all[a] %}
                 <div>
                     <label>
-                        <a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/kopie/{{ a }}">copy</a>
-                        <a style="{{ 'color: #888;' if aa._try('status') < 1 }}" class="asbutton" href="/views/{{ a }}">{{ a }}</a>
+                        <a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/{{ default._try('created_ts') }}/copy">copy</a>
+                        <a style="{{ 'color: #888;' if default._try('status') < 1 }}" class="asbutton" href="/views/{{ default._try('created_ts') }}">default</a>
                     </label>
-                    <div class="view-info" style="border: 1px solid {{ aa._try('color') }};">
+                    <div class="view-info" style="border: 1px solid {{ default._try('color') }};">
                         <!-- leeg voor default -->
                     </div>
                 </div>
                 <p style="border-bottom: 1px solid var(--menu); margin:0;"></p>
-                {% for a, aa in all.items() %}
-                    {% if a != 'default' and a in mijnviews %}
-                        <div>
-                            <label>
-                                <a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/kopie/{{ a }}">copy</a>
-                                <a style="{{ 'color: #888;' if aa._try('status') < 1 }}" class="asbutton" href="/views/{{ a }}">{{ a }}</a>
-                            </label>
-                            <div class="view-info" style="border: 1px solid {{ aa._try('color') }};">
-                                {{ aa._try('alias') }}
-                                {{ aa._try('created_ts')|date }}
+                {% for status in [2, 1, 0] %}
+                    {% for a, aa in all.items() %}
+                        {% if a in mijnviews and aa._try('status', default=0) == status %}
+                            <div>
+                                <label>
+                                    <a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/{{ a }}/copy">copy</a>
+                                    <a style="{{ 'color: #888;' if aa._try('status') < 1 }}" class="asbutton" href="/views/{{ a }}">{{ aa._try('name') }}</a>
+                                </label>
+                                <div class="view-info" style="border: 1px solid {{ aa._try('color') }};">
+                                    {{ aa._try('alias') }}
+                                    {{ aa._try('created_ts')|date }}
+                                </div>
                             </div>
-                        </div>
-                    {% endif %}
+                        {% endif %}
+                    {% endfor %}
                 {% endfor %}
                 <p style="border-bottom: 1px solid var(--menu); margin:0;"></p>
                 {% for a, aa in all.items() %}
                     {% if a != 'default' and a not in mijnviews %}
                         <div>
                             <label>
-                                <a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/kopie/{{ a }}">copy</a>
-                                <a style="{{ 'color: #888;' if aa._try('status') < 1 }}" class="asbutton" href="/views/{{ a }}">{{ a }}</a>
+                                <a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/{{ a }}/copy">copy</a>
+                                <a style="{{ 'color: #888;' if aa._try('status') < 1 }}" class="asbutton" href="/views/{{ a }}">{{ aa._try('name') }}</a>
                             </label>
                             <div class="view-info" style="border: 1px solid {{ aa._try('color') }};">
                                 {{ aa._try('alias') }}
@@ -55,13 +56,12 @@
                 {% endfor %}
                 </div>
             </div>
-
             <!-- rechterkolom -->
             <div class="two-columns">
-                {% if kopie is none %}
-                    <!-- tabel -->
+                {% if not kopie %}
+                    <!-- tabel MIDDEN KOLOM -->
                     <div style=" display: block; width: 150px; border: 1px solid {{ single._try('color') }}; background-color: {{ single._try('color') }}; padding: 0.25em; border-radius: 3px; margin: 1em 1em 0 0;">
-                        <form name="deletefield" method="post" action="/views/edit/{{ viewname }}" class="fields-fixed">
+                        <form name="deletefield" method="post" action="/views/edit/{{ viewkey }}" class="fields-fixed">
                             <input type="hidden" name="delete-field" value="1">
                             <input type="hidden" name="fieldname" value="">
                             <input type="hidden" name="fieldnamelist" value="{{ single._try('fields')|join(',') }}">
@@ -77,9 +77,7 @@
                                     <tr style="border-color: white;">
                                         <td class="minfield">{{ field }}</td>
                                         {% if canedit %}
-                                            <td class="minfield">
-                                                &nbsp;
-                                            </td>
+                                            <td class="minfield">&nbsp;</td>
                                         {% endif %}
                                     </tr>
                                     {% endfor %}
@@ -102,7 +100,7 @@
                         </form>
 
                         {% if viewname != 'default' %}
-                            <form action="/views/group/{{ viewname }}" method="post" style="margin-top: 1em; display: block;">
+                            <form action="/views/group/{{ viewkey }}" method="post" style="margin-top: 1em; display: block;">
                                 <input type="hidden" name="delete-group" value="1">
                                 <table style="width: 100%;">
                                     <thead>
@@ -141,23 +139,24 @@
                         {% if not canedit %}
                             <h2>You cannot edit the view [{{ viewname }}], but you can copy it</h2>
                         {% elif canedit %}
-                            <h2>View {{ viewname }} van: {{ single._try('alias') }}</h2>
-                            <form method="post" class="single-form" action="/views/{{ viewname }}">
+                            <h2>View {{ viewname }} by: {{ single._try('alias') }}</h2>
+                            <form method="post" class="single-form" action="/views/{{ viewkey }}">
+                                <input type="text"  pattern=".{3,}" name="changename" value="{{ single._try('name') }}">
                                 <input style="height: 1.5em;" type="color" name="color" value="{{ single._try('color') }}">
                                 <span style="background-color: #eee; border: 1px solid #ddd; border-radius: 3px; padding: 0.25em 0.5em; margin: 0 0.5em 0.25em 0;">
-                                    <input {{ 'checked' if single._try('status') == 2 }} type="radio" name="status" value="2"> Primair
+                                    <input {{ 'checked' if single._try('status') == 2 }} type="radio" name="status" value="2"> Primary
                                 </span>
                                 <span style="background-color: #eee; border: 1px solid #ddd; border-radius: 3px; padding: 0.25em 0.5em; margin: 0 0.5em 0.25em 0;">
-                                    <input {{ 'checked' if single._try('status') == 1 }} type="radio" name="status" value="1"> Actief
+                                    <input {{ 'checked' if single._try('status') == 1 }} type="radio" name="status" value="1"> Active
                                 </span>
                                 <span style="background-color: #eee; border: 1px solid #ddd; border-radius: 3px; padding: 0.25em 0.5em; margin: 0 0.5em 0.25em 0;">
-                                    <input {{ 'checked' if single._try('status') < 1 }} type="radio" name="status" value="0"> Passief
+                                    <input {{ 'checked' if single._try('status') < 1 }} type="radio" name="status" value="0"> Passive
                                 </span>
                                 <input type="submit" name="save" value="Opslaan" style="margin: 0 0.5em 0.25em 0;">
                             </form>
 
                             <h2>Link Fields:</h2>
-                            <form name="addfield" style="display: block" method="post" action="/views/edit/{{ viewname }}">
+                            <form name="addfield" style="display: block" method="post" action="/views/edit/{{ viewkey }}">
                                 <input type="hidden" name="fieldname" value="">
                                 <input type="hidden" name="add-field" value="1">
                                 <input type="hidden" name="fieldnamelist" value="{{ single._try('fields')|join(',') }}">
@@ -169,7 +168,7 @@
                             </form>
 
                             <h2>Make Color Field</h2>
-                            <form class="single-form" name="circularfield" style="display: block" method="post" action="/views/edit/{{ viewname }}">
+                            <form class="single-form" name="circularfield" style="display: block" method="post" action="/views/edit/{{ viewkey }}">
                                 <input type="hidden" name="fieldnamelist" value="{{ single._try('fields')|join(',') }}">
                                 <input type="text" class="custom-field" name="fieldname" value="" style="width: 6em;" pattern=".{2,}" required >
                                 <input type="submit" name="new-cycle-field" value="Make">
@@ -177,7 +176,7 @@
 
                             {% if True %}
                                 <h2>Make Text Field</h2>
-                                <form class="single-form" name="customfield" style="display: block" method="post" action="/views/edit/{{ viewname }}">
+                                <form class="single-form" name="customfield" style="display: block" method="post" action="/views/edit/{{ viewkey }}">
                                     <input type="hidden" name="fieldnamelist" value="{{ single._try('fields')|join(',') }}">
                                     <input type="text" class="custom-field" name="fieldname" value="" style="width: 6em;" pattern=".{2,}" required >
                                     <input type="submit" name="new-text-field" value="Make">
@@ -185,17 +184,17 @@
                             {% endif %}
 
                             <h2>Link Groups</h2>
-                            <form name="addgroup" style="display: block" method="post" action="/views/group/{{ viewname }}">
+                            <form name="addgroup" style="display: block" method="post" action="/views/group/{{ viewkey }}">
                                 <input type="hidden" name="add-group" value="1">
                                 {% for k, v in groepen.items() %}
-                                    {% if not k in single._try('groups', []) %}
+                                    {% if not k in single._try('groups', []) and v['status'] == 1 %}
                                         <input type="submit" style="margin-bottom: 0.25em;" name="{{ k }}" value="{{ v['name'] }}">
                                     {% endif %}
                                 {% endfor %}
                             </form>
 
                             <h2>Handle with care</h2>
-                            <form style="display: block;" method="post" action="/views/delete/{{ viewname }}">
+                            <form style="display: block;" method="post" action="/views/delete/{{ viewkey }}">
                                 <input type="submit" name="delete" value="Delete" style="background-color: red; color: white;">
                             </form>
                         {% endif %}
@@ -203,8 +202,8 @@
                 {% else %}
                     <div style="text-align: left;">
                         <h2>Make a copy of: {{ viewname }}</h2>
-                        <form class="single-form" name="kopie" method="post" action="/views/kopie/{{ viewname }}">
-                            <input pattern=".{3,}" required type="text" name="newname">
+                        <form class="single-form" name="kopie" method="post" action="/views/kopie/{{ viewkey }}">
+                            <input pattern=".{3,}" required type="text" name="newname" placeholder="Name of the copy">
                             <input type="submit" name="kopieer" value="Copy">
                         </form>
                     </div>
@@ -248,7 +247,7 @@
         if(erin.startsWith('-')){
             return '';
         }
-        erin = erin.replaceAll(/[^a-zA-Z0-9_-]/gi, '').substring(0,maxlen);
+        erin = erin.replaceAll(/[^a-z0-9_-]/g, '').substring(0,maxlen);
         return erin;
     }
 
@@ -256,7 +255,7 @@
         // alleen een naam met kleine letters, cijfers en _
         $('input[name="newname"]').on('keyup', function(){
             var t = $(this).val();
-            t = name_safe(t, 12);
+            t = name_safe(t, 10);
             $(this).val(t);
         });
 

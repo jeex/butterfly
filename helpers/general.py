@@ -10,12 +10,11 @@ import sys
 from pprint import pprint as ppp
 from ftplib import FTP
 import io
+import webbrowser
 
 import appdirs
 import tkinter as tk
 from tkinter import filedialog, simpledialog, messagebox
-
-LOGGING = False
 
 class Pickles:
 	@classmethod
@@ -27,7 +26,7 @@ class Pickles:
 		return None
 
 	@classmethod
-	def write(cls, path: str, d: dict) -> bool:
+	def write(cls, path: str, d: dict|list) -> bool:
 		try:
 			pickle.dump(d, open(path, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
 			return True
@@ -45,9 +44,13 @@ class Pickles:
 
 class Mainroad:
 	forca = list()
+	version = '1.05'
+	devdev = False
+	logging = False
+	updateurl = 'cpnits.com/butterfly.html'
 
 	@classmethod
-	def initialize(cls):
+	def before_webview_start(cls) -> bool:
 		# get user settings path
 		settings_path = cls.get_settings_path()
 		# get user settings
@@ -65,18 +68,57 @@ class Mainroad:
 			user = cls.ask_login(odpath)
 			newus['magda'] = user['magda']
 			newus['alias'] = user['alias']
+			newus['password'] = user['password']
+			newus['version'] = cls.version
 			Pickles.write(settings_path, newus)
-			return
+			user_settings = d = Pickles.read(settings_path)
 
 		# if not odname in settings
 		# check if proper odname in settings (can change)
-		if os.path.isdir(user_settings['onedrive']):
-			return
+		if not 'onedrive' in user_settings:
+			odpath = cls.ask_onedrive_path()
+			user_settings['onedrive'] = odpath
+			Pickles.write(settings_path, user_settings)
+		elif not os.path.isdir(user_settings['onedrive']):
+			odpath = cls.ask_onedrive_path()
+			user_settings['onedrive'] = odpath
+			Pickles.write(settings_path, user_settings)
+		else:
+			odpath = user_settings['onedrive']
 
-		odpath = cls.ask_onedrive_path()
-		user_settings['onedrive'] = odpath
-		Pickles.write(settings_path, user_settings)
+		# OneDrive path is ok, login via current user-settings must CHECK
+		if cls.check_login(odpath, user_settings=user_settings) is None:
+			cls.force_reset()
+			cls.exit_message("Butterfly needs to reset [password]. Please try again.")
+
+		# then check version
+		if not cls.check_version(user_settings):
+			cls.force_reset()
+			cls.exit_message("Butterfly needs to reset [newer version]. Please try again.")
+
+		# last: if update required
+		message = cls.get_message()
+		if message is None:
+			return True
+
+		if cls.updateurl in message:
+			# open browser to new version
+			webbrowser.open(f"https://{cls.updateurl}", new=0, autoraise=True)
+		if '!' in message:
+			# update required
+			cls.force_reset()
+			cls.exit_message(message)
+		return True
 		# ready
+
+	@classmethod
+	def get_message(cls) -> str|None:
+		path = os.path.join(cls.get_onedrive_path(), 'DO_NOT_DELETE.txt')
+		try:
+			with open(path, 'r') as f:
+				return f.read()
+		except:
+			return None
 
 	@classmethod
 	def force_reset(cls):
@@ -105,7 +147,6 @@ class Mainroad:
 
 	@classmethod
 	def ask_login(cls, odpath) -> dict:
-		users = Pickles.read(f"{odpath}/system/s_rs.pickle")
 		while True:
 			root = tk.Tk()
 			root.withdraw()
@@ -114,11 +155,34 @@ class Mainroad:
 				cls.exit_message('No Password given.')
 
 			# check give password
-			for user, userdata in users.items():
-				if userdata['password'] == password:
-					userdata['alias'] = user
-					return userdata
+			user = cls.check_login(odpath, password=password)
+			if user is None:
+				continue
+			else:
+				return user
 			# repeat if false
+
+	@classmethod
+	def check_login(cls, odpath, user_settings: dict=None, password: str=None) -> dict|None:
+		if not user_settings is None:
+			if 'password' in user_settings:
+				password = user_settings['password']
+			else:
+				return None
+		elif password is None:
+			return None
+
+		users = Pickles.read(f"{odpath}/system/s_srs.pickle")
+		for user in users: # users is list
+			if user['password'] == password:
+				return user
+		return None
+
+	@classmethod
+	def check_version(cls, user_settings) -> bool:
+		if not 'version' in user_settings:
+			return False
+		return user_settings['version'] == cls.version
 
 	@classmethod
 	def force_access(cls, name, accessdir):
@@ -215,7 +279,7 @@ class Mainroad:
 
 	@classmethod
 	def loglog(cls, t: str):
-		if LOGGING:
+		if cls.logging:
 			pad = '/Users/jeex/Desktop/loglog.log'
 			with open(pad, 'a') as f:
 				f.write(t + '\n')
@@ -795,3 +859,22 @@ class FtpAnta:
 		except:
 			return False
 	'''
+
+'''
+userspath = os.path.join(Mainroad.get_system_path(), 's_srs.pickle')
+userslist = [{'magda': ['docent'], 'alias': 'Iris', 'password': 'trwnvcksghdes'},
+ {'magda': ['administratie', 'docent', 'beheer'],
+  'name': 'Jaqueline',
+  'password': 'bnuskvbdhyswk'},
+ {'magda': ['docent'], 'alias': 'Sarah', 'password': 'tgjklncdhsdlobg'},
+ {'magda': ['administratie', 'docent', 'beheer', 'admin'],
+  'alias': 'Victor',
+  'password': 'nr1'},
+ {'magda': ['administratie', 'docent', 'beheer'],
+  'alias': 'Marcel',
+  'password': 'sxtdncdklchnbd'}]
+
+Pickles.write(userspath, userslist)
+userslist = Pickles.read(userspath)
+ppp(userslist)
+'''

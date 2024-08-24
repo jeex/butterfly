@@ -33,7 +33,6 @@ def home():
 	studenten = students_o.all()
 	sysls_o = Sysls()
 	groepen = dict(sysls_o.get_sysl('s_group'))
-	ppp(groepen)
 	for s in studenten.values():
 		for n in s['notes']:
 			if n['done'] == 0:
@@ -41,15 +40,8 @@ def home():
 					pergroep[s['s_group']] = list()
 				pergroep[s['s_group']].append(StudentJinja(s, Student.get_model()))
 
-				'''
-				if n['alias'] == jus.alias():
-					mijntodos.append(StudentJinja(s, Student.get_model()))
-				elif jus.magda(['admin']):
-					s['hun'] = n['alias']
-					huntodos.append(StudentJinja(s, Student.get_model()))
-				break
-				'''
-
+	bericht = Mainroad.get_message()
+	print(bericht)
 
 	return render_template(
 		'home.html',
@@ -57,7 +49,5 @@ def home():
 		props=jus,
 		pergroep=pergroep,
 		groepen=groepen,
-
-		# mijntodos=mijntodos,
-		# huntodos=huntodos,
+		bericht=bericht,
 	)

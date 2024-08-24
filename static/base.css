@@ -288,3 +288,13 @@ a:visited{
     background-color: var(--signaal)!important;
     color: var(--wit)!important;
 }
+
+.grade-passed{
+    background-color: lightgreen;
+}
+.grade-failed{
+    background-color: red;
+}
+.grade-not{
+    background-color: inherit;
+}

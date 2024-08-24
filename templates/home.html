@@ -9,7 +9,9 @@
         <h1>Welcome at CPNITS Butterfly, {{ props.alias() }}</h1>
         <p>The path to your OneDrive is: <strong>{{ props.odpad() }}</strong></p>
         <!-- <a class="asbutton" href="#">werkt nog niet</a> -->
-
+        {% if bericht is not none %}
+            <div style="margin: 1em; border: 2px solid var(--signaal);padding: 1em;">{{ bericht }}</div>
+        {% endif %}
         {% if props.magda(['docent']) %}
             <div style="display: flex; flex-direction: row; justify-content: space-between;">
                 <div style="width: {{ '49%'|safe if huntodos|length > 0 else '100%'|safe }};">

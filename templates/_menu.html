@@ -1,6 +1,10 @@
 <header>
     <menu id="mainmenu">
         <ul>
+            {% if props._prev() != '' %}
+                <li class=""><a href="{{ props._prev() }}">&larr;</a></li>
+            {% endif %}
+
             {% if props._is() %}
             <li class="{{ 'actief'|safe if menuitem == 'home' }}"><a href="/home">home</a></li>
             {% endif %}

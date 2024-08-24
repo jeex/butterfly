@@ -37,10 +37,10 @@ def generate():
 	students_o.open_dir(pad)
 	return redirect('/home')
 
-@ep_beheer.get('/')
-@ep_beheer.get('/<path:sysl>')
 @ep_beheer.get('/<path:sysl>/<int:id>')
-def kiezen(sysl='', id=0):
+@ep_beheer.get('/<path:sysl>')
+@ep_beheer.get('/')
+def kiezen(sysl='s_group', id=0):
 	jus = UserSettings()
 	if not jus.magda(['beheer']):
 		return redirect('/home')

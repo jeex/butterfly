@@ -1,7 +1,7 @@
 # groepen
 from flask import redirect, request, Blueprint, render_template
-
-from helpers.general import Casting, Timetools, IOstuff, ListDicts
+from pprint import pprint as ppp
+from helpers.general import Casting, Timetools, IOstuff, ListDicts, JINJAstuff
 from helpers.singletons import UserSettings, Sysls, Students, Views
 
 from endpoint.studenten import (
@@ -22,38 +22,43 @@ ep_groepen = Blueprint(
 
 menuitem = 'groepen'
 
-@ep_groepen.get('')
-def tofilter():
-	return redirect('/groepen/1010')
-
-@ep_groepen.get('/<int:groepnr>/<path:viewname>')
+@ep_groepen.get('/<int:groepnr>/<int:viewid>')
 @ep_groepen.get('/<int:groepnr>')
-def studenten_groep(groepnr, viewname=''):
+@ep_groepen.get('')
+def studenten_groep(groepnr=0, viewid=0):
 	jus = UserSettings()
-
 	sta, fil, tel, act = filter_stuff()
 	filter = ''
 
-	# groepen
+	# groepnr
 	sysls_o = Sysls()
+	views_o = Views()
+	mijngroepen = views_o.mijn_groepen()
 	all = sysls_o.get_sysl('s_group')
+	allegroepen = ListDicts.sortlistofdicts(list(all.values()), 'ordering')
+
+	# groepen
 	groepen = list()
 	groep = None
-	for g in ListDicts.sortlistofdicts(list(all.values()), 'ordering'):
+	for g in allegroepen:
+		if groepnr == 0:
+			if g['id'] in mijngroepen:
+				groepnr = g['id']
 		if g['id'] == groepnr:
 			groep = g
 		groepen.append(g)
 
 	# studenten
 	students = list()
-	if not groep is None:
+	if groep is None:
+		pass
+	else:
 		students_o = Students()
 		all = students_o.all_as_lod()
 		for s in all:
 			# filter on this group
 			if not s['s_group'] == groepnr:
 				continue
-
 			s['filter'] = get_student_filter(s, sta)
 			s['todo'] = 0
 			for n in s['notes']:
@@ -62,34 +67,41 @@ def studenten_groep(groepnr, viewname=''):
 					break
 			students.append(StudentJinja(s, Student.get_model()))
 		del (all)
-	else:
-		pass
 
 	allfieldnames = list(Student.get_empty().keys())
 
 	# alle views bij deze groep
-	views_o = Views()
+	view = views_o.get_single_by_key(viewid)
 	allviews = views_o.get()
-	for v in list(allviews.keys()):
-		if v == 'default':
-			del(allviews[v])
+	selectprimary = viewid == 0
+	for key in list(allviews.keys()):
+		if key == views_o.get_defaultkey():
+			del(allviews[key])
 			continue
-		if not groepnr in allviews[v]['groups']:
-			del(allviews[v])
-			continue
-		if viewname == '':
-			viewname = v
 
-	# deze view
-	view = views_o.get_single(viewname)
+		if not groepnr in allviews[key]['groups']:
+			del(allviews[key])
+			continue
+
+		if allviews[key]['status'] == 2 and selectprimary:
+			viewid = key
+			view = allviews[key]
+			selectprimary = False
+
+		if viewid == 0:
+			viewid = key
+			view = allviews[key]
+
+		allviews[key] = JINJAstuff(allviews[key], {})
 
 	if view is None:
+		# make view empty with all fields
 		view = views_o.empty_view()
 		view['fields'] = allfieldnames
-		view['color'] = '#000000'
 	else:
+		# chosen view
 		view['fields'].append('id')
-
+	# append nice names to view
 	view['nicenames'] = dict()
 	for f in view['fields']:
 		view['nicenames'][f] = Student.get_nicename(f)
@@ -108,19 +120,19 @@ def studenten_groep(groepnr, viewname=''):
 		tellers=tel,
 		actiefstats=act,
 		sysls=sysls_o.get(),
-		avs=allviews,
+		allviews=allviews,
 		view=view,
-		mijngroepen=views_o.mijn_groepen(),
-		viewname=viewname,
+		mijngroepen=mijngroepen,
+		viewid=viewid,
 		afns=allfieldnames,
 		circular=circular,
 	)
 
-@ep_groepen.post('/<int:groepnr>/<path:viewname>')
+@ep_groepen.post('/<int:groepnr>/<int:viewid>')
 @ep_groepen.post('/<int:groepnr>')
-def studenten_groep_post(groepnr, viewname=''):
+def studenten_groep_post(groepnr, viewid=0):
 	if not IOstuff.check_required_keys(request.form, ['what', 'field-name', 'field-value', 'student-id']):
-		return redirect(f"/groepen/{groepnr}/{viewname}")
+		return redirect(f"/groepen/{groepnr}/{viewid}")
 
 	cc = 'circulars' #avoid typoos
 	cu = 'customs'
@@ -133,7 +145,7 @@ def studenten_groep_post(groepnr, viewname=''):
 	student = students_o.get_by_id(id)
 
 	if student is None:
-		return redirect(f"/groepen/{groepnr}/{viewname}")
+		return redirect(f"/groepen/{groepnr}/{viewid}")
 
 	if what == 'portfolio':
 		fieldval = Casting.str_(request.form['field-value'], '')
@@ -142,7 +154,10 @@ def studenten_groep_post(groepnr, viewname=''):
 	if what == 'grade':
 		fieldval = Casting.int_(request.form['field-value'], 0)
 		student['grade'] = fieldval
-		student['grade_ts'] = Timetools.now_secs()
+		if fieldval > 0:
+			student['grade_ts'] = Timetools.now_secs()
+		else:
+			student['grade_ts'] = 0
 
 	elif what == cc:
 		# click on circular field
@@ -153,30 +168,30 @@ def studenten_groep_post(groepnr, viewname=''):
 			cirval = 0
 
 		if not cc in student:
-			student[cc] = {viewname: {field: cirval}}
-		if not viewname in student[cc]:
-			student[cc][viewname] = {field: cirval}
-		if not field in student[cc][viewname]:
-			student[cc][viewname][field] = cirval
+			student[cc] = {viewid: {field: cirval}}
+		if not viewid in student[cc]:
+			student[cc][viewid] = {field: cirval}
+		if not field in student[cc][viewid]:
+			student[cc][viewid][field] = cirval
 		else:
-			student[cc][viewname][field] = cirval
+			student[cc][viewid][field] = cirval
 
 	elif what == cu:
 		# edit in custom text fiel
 		cusval = Casting.str_(request.form['field-value'], '')
 		if not cu in student:
-			student[cu] = {viewname: {field: cusval}}
-		if not viewname in student[cu]:
-			student[cu][viewname] = {field: cusval}
-		if not field in student[cu][viewname]:
-			student[cu][viewname][field] = cusval
+			student[cu] = {viewid: {field: cusval}}
+		if not viewid in student[cu]:
+			student[cu][viewid] = {field: cusval}
+		if not field in student[cu][viewid]:
+			student[cu][viewid][field] = cusval
 		else:
-			student[cu][viewname][field] = cusval
+			student[cu][viewid][field] = cusval
 
 	students_o.make_student_pickle(id, student)
 	# eventualy fix student dir issues
 	# fix_student_dir(id, student, student)
-	return redirect(f"/groepen/{groepnr}/{viewname}")
+	return redirect(f"/groepen/{groepnr}/{viewid}")
 
 
 

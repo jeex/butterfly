@@ -232,6 +232,7 @@ class ViewsMeta(type):
 
 class Views(metaclass=ViewsMeta):
 	_viewspath = ''
+	_defaultkey = 1723028433
 	_defaultname = 'default'
 	_sysmem = dict()
 
@@ -261,38 +262,44 @@ class Views(metaclass=ViewsMeta):
 			if not fname.endswith('.pickle'):
 				continue
 			d = Pickles.read(os.path.join(self._viewspath, fname))
+			key = Casting.int_(d['created_ts'], default=404)
 			try:
-				self._sysmem[d['name']] = d
+				self._sysmem[key] = d
 			except:
 				continue
-		if not self._defaultname in self._sysmem:
+		if not self._defaultkey in self._sysmem:
 			# nog geen standaard view 'min' in systeem:
 			d = self.empty_view()
+			d['created_ts'] = self._defaultkey
 			self.make_view(d)
 
+	def get_defaultkey(self) -> int:
+		return self._defaultkey
+
+	def get_defaultname(self) -> str:
+		return self._defaultname
+
 	def make_view(self, d) -> bool:
-		naam = Casting.name_safe(d['name'], True)
+		naam = Casting.int_(d['created_ts'], True)
 		pad = os.path.join(self._viewspath, f"{naam}.pickle")
 		if Pickles.write(pad, d):
 			self.init()
 			return True
 		return False
 
-	def get(self) -> OrderedDict:
-		dc = OrderedDict(deepcopy(self._sysmem))
-		dc = OrderedDict(sorted(dc.items()))
-		return dc
+	def get(self) -> dict:
+		return deepcopy(self._sysmem)
 
-	def get_single(self, name):
+	def get_single_by_key(self, key) -> dict|None:
 		try:
-			return deepcopy(self._sysmem[name])
+			return deepcopy(self._sysmem[key])
 		except:
 			return None
 
-	def delete(self, name: str):
-		if name in self._sysmem and name != self._defaultname:
-			del(self._sysmem[name])
-			pad = os.path.join(self._viewspath, f"{name}.pickle")
+	def delete(self, key: int):
+		# but not if key is default view
+		if key in self._sysmem and key != self._defaultkey:
+			pad = os.path.join(self._viewspath, f"{key}.pickle")
 			Pickles.delete(pad)
 			self.init()
 
@@ -464,7 +471,11 @@ class Students(metaclass=StudentsMeta):
 		return True
 
 	def move_student_folder(self, oldpath, curpath):
-		shutil.move(oldpath, curpath)
+		# check if old path exists
+		try:
+			shutil.move(oldpath, curpath)
+		except:
+			pass
 
 	def new_password(self, id):
 		x = ''.join(random.choices(string.ascii_lowercase, k=6))
@@ -537,7 +548,7 @@ class Students(metaclass=StudentsMeta):
 			except:
 				return f"{htm}\n\t\t\t<p><span></span></p>"
 
-		def make_custom(html):
+		def make_custom_old(html):
 			customfields = dict() # of dicts
 			try:
 				for cus in d['customs'].values():
@@ -567,12 +578,49 @@ class Students(metaclass=StudentsMeta):
 			html = f'{html}\n\t\t\t</table>'
 			return html
 
+		def make_custom(html, cust):
+			views_o = Views()
+			# creates one line for one circular
+			view = views_o.get_single_by_key(cust)
+			if view is None:
+				return html
+			viewname = view['name']
+
+			html = f'{html}\n\t\t\t<table class="circular">'
+			html = f'{html}\n\t\t\t\t<tr><th></th>'
+			for field in view['fields']:
+				if field in studfields:
+					continue
+				if not field.startswith('t_'):
+					continue
+				fieldname = field.replace('t_', '')
+				html = f'{html}\n\t\t\t\t\t<th>{fieldname}</th>'
+			html = f'{html}\n\t\t\t\t</tr>'
+
+			html = f'{html}\n\t\t\t\t<tr><td style="width: 100px;">{viewname}</td>'
+			for field in view['fields']:
+				if field in studfields:
+					continue
+				if not field.startswith('t_'):
+					continue
+				if field in d['customs'][cust]:
+					val = d['customs'][cust][field]
+				else:
+					val = ''
+				# text field
+				html = f'{html}\n\t\t\t\t\t<td>{val}</td>'
+
+			html = f'{html}\n\t\t\t\t</tr>'
+			html = f'{html}\n\t\t\t</table>'
+			return html
+
 		def make_circular(html, circ):
 			views_o = Views()
 			# creates one line for one circular
-			view = views_o.get_single(circ)
+			view = views_o.get_single_by_key(circ)
 			if view is None:
 				return html
+			viewname = view['name']
 
 			html = f'{html}\n\t\t\t<table class="circular">'
 			html = f'{html}\n\t\t\t\t<tr><th></th>'
@@ -581,11 +629,11 @@ class Students(metaclass=StudentsMeta):
 					continue
 				if not field.startswith('c_'):
 					continue
-				fieldname = field.replace('c_', '').replace('t_', '')
+				fieldname = field.replace('c_', '')
 				html = f'{html}\n\t\t\t\t\t<th>{fieldname}</th>'
 			html = f'{html}\n\t\t\t\t</tr>'
 
-			html = f'{html}\n\t\t\t\t<tr><td style="width: 100px;">{circ}</td>'
+			html = f'{html}\n\t\t\t\t<tr><td style="width: 100px;">{viewname}</td>'
 			for field in view['fields']:
 				if field in studfields:
 					continue
@@ -659,11 +707,12 @@ class Students(metaclass=StudentsMeta):
 		html = make_li(html, 'KOM-code', 'kom_code')
 		html = make_li(html, 'NHLS-code', 'nhls_code')
 
-		html = f'{html}\n\t\t</ul>\n\t\t<h2>Custom fields</h2>\n\t\t<div class="circulars">'
+		html = f'{html}\n\t\t</ul>\n\t\t<h2>Custom fields</h2>\n\t\t<div class="customs">'
 		if 'customs' in d:
-			html = make_custom(html)
+			for cust in d['customs']:
+				html = make_custom(html, cust)
 
-		html = f'{html}\n\t\t</div>\n\t\t<h2>Checks</h2>\n\t\t<div class="customs">'
+		html = f'{html}\n\t\t</div>\n\t\t<h2>Checks</h2>\n\t\t<div class="circulars">'
 		if 'circulars' in d:
 			for circ in d['circulars']:
 				html = make_circular(html, circ)
@@ -824,6 +873,12 @@ class UserSettings(metaclass=UserSetingsMeta):
 		except:
 			return default
 
+	def _prev(self) -> str:
+		try:
+			return self._props['prev_url']
+		except:
+			return ''
+
 	def set_prop(self, key: str, val):
 		self._props[key] = val  # update or create
 		Pickles.write(self._settings_path, self._props)
@@ -962,4 +1017,16 @@ class Hunts(metaclass=HuntsMeta):
 		pass
 		
 		
+'''
+
+'''
+# views omzetten
+vo = Views()
+alle = vo.get()
+ppp(alle)
+
+for val in alle.values():
+	if val['name'] == 'default':
+		print('default', val['created_ts'])
+	vo.make_view(val)
 '''

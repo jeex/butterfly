@@ -8,7 +8,7 @@ from helpers.general import Mainroad
 class Window:
 	_venster = None
 	_wprops = [100, 100, 800, 400, False, False]
-	_title = 'CPNITS Butterfly v1.04'
+	_title = f'CPNITS Butterfly {Mainroad.version}'
 
 	def __init__(self, app):
 		wprops = Mainroad.get_window_props()
