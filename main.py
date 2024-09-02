@@ -137,14 +137,14 @@ def asdatetime(i):
 	except:
 		return i
 
-if not Mainroad.devdev:
-	@app.errorhandler(Exception)
-	def handle_error(e):
-		Mainroad.loglog(f"error {e}")
-		Mainroad.loglog(f"\t{request.full_path}")
-		jus = UserSettings()
-		jus.set_prop('last_url', '')
-		return redirect('/home')
+
+@app.errorhandler(Exception)
+def handle_error(e):
+	Mainroad.loglog(f"error {e}")
+	Mainroad.loglog(f"\t{request.full_path}")
+	jus = UserSettings()
+	jus.set_prop('last_url', '')
+	return redirect('/home')
 
 
 @app.before_request
@@ -178,8 +178,6 @@ def before_request():
 			pass
 		else:
 			lasturl = jus.get_prop('last_url', default='')
-			print(lasturl)
-			print(rp)
 			if lasturl == rp:
 				pass
 			elif lasturl in ['', '/', '/home']:

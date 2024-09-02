@@ -361,7 +361,8 @@ $(function(){
     {% elif filter == 'noshow' %}
         $('table th:nth-of-type(4)').trigger('click')
     {% else %}
-        $('table th:nth-of-type(4)').trigger('click')
+        // als for groups
+        $('table th:nth-of-type(3)').trigger('click')
     {% endif %}
 
     $('#csv-area').css('width', $('table').width());

@@ -45,6 +45,7 @@ def view(viewid=0, copie=None):
 	allviews = views_o.get()
 	mijnviews = views_o.mijn_views()
 	singleview = views_o.get_single_by_key(viewid)
+
 	if singleview is None:
 		return redirect(f'/views/{views_o.get_defaultkey()}')
 
@@ -112,8 +113,8 @@ def views_post(viewid):
 	single['color'] = color
 	single['status'] = status
 	single['name'] = name
-	print('single', single)
 	views_o.make_view(single)
+
 	return redirect(f"/views/{viewid}")
 
 # for editing stuff in a view

@@ -115,7 +115,7 @@
                             <label>Grade date</label>
                             {% if student._try('grade_ts') > 0 %}
                                 {{ student._try('grade_ts')|date }}
-                                <a class="single-links-rechts asbutton" id="grade-mail" href="#">Send email</a>
+                                <a class="single-links-rechts asbutton" id="grade-mail" href="/studenten/graded-mail/{{ student._id() }}">Send email</a>
                             {% endif %}
                         </p>
                     {% endif %}
@@ -143,7 +143,7 @@
                     {% if not nieuw and student._try('s_status') == 10 and props.magda(['beheer']) %}
                         <p>
                             <label>Invite</label>
-                            <a id="invite-mail " class="asbutton" href="#">Send confirmation</a>
+                            <a id="invite-mail" class="asbutton" href="/studenten/invite-mail/{{ student._id() }}">Send confirmation</a>
                         </p>
                     {% endif %}
 
@@ -445,7 +445,7 @@ let controle_note_submit = function(e){
     }else{
     }
 }
-{% if student._try('s_status') == 10 and not nieuw %}
+{% if false and student._try('s_status') == 10 and not nieuw %}
     let invite_mail = function(){
         b = "{{ invite['text']|safe }}";
         b = b.replaceAll('<br>', "\n");
@@ -480,8 +480,8 @@ $(function(){
         controle_note_submit(e)
     });
     $('#invite-mail').on('click', function(e){
-        e.preventDefault();
-        invite_mail();
+        // e.preventDefault();
+        // invite_mail();
     });
     $('#grade-mail').on('click', function(e){
         e.preventDefault();

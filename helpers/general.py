@@ -30,8 +30,8 @@ class Pickles:
 		try:
 			pickle.dump(d, open(path, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
 			return True
-		except:
-			pass
+		except Exception as e:
+			print(e)
 		return False
 
 	@classmethod
@@ -44,50 +44,66 @@ class Pickles:
 
 class Mainroad:
 	forca = list()
-	version = '1.05'
+	version = '1.06'
 	devdev = False
 	logging = False
 	updateurl = 'cpnits.com/butterfly.html'
 
 	@classmethod
+	def get_empty_settings(cls) -> dict:
+		return dict(
+			window=[],
+			onedrive='',
+			magda=['docent'],
+			alias='',
+			password='',
+			version=cls.version,
+		)
+
+	@classmethod
+	def test_settings_thing(cls, thing) -> bool:
+		# checks if settingsfile is ok
+		if not isinstance(thing, dict):
+			cls.loglog(f"test_settings_thing 1: {thing}")
+			return False
+		for key in cls.get_empty_settings():
+			if not key in thing.keys():
+				cls.loglog(f"test_settings_thing 2: {key} not in {thing}")
+				return False
+		if thing['onedrive'] == '':
+			cls.loglog(f"test_settings_thing 3: no onedrive in {thing}")
+			return False
+		if thing['alias'] == '':
+			cls.loglog(f"test_settings_thing 4: na alias in {thing}")
+			return False
+		if thing['password'] == '':
+			cls.loglog(f"test_settings_thing 5: no password in {thing}")
+			return False
+		if not os.path.isdir(thing['onedrive']):
+			cls.loglog(f"test_settings_thing 6: OneDrive not valid in {thing}")
+			return False
+		return True
+
+	@classmethod
 	def before_webview_start(cls) -> bool:
 		# get user settings path
+		cls.force_access('settings', cls.get_settings_dir())
 		settings_path = cls.get_settings_path()
-		# get user settings
 		user_settings = d = Pickles.read(settings_path)
-		if user_settings is None:
-			# ask one drive path first, can only return proper path
-			odpath = cls.ask_onedrive_path()
-			newus = dict(
-				window=[],
-				onedrive=odpath,
-				magda = ['docent'],
-				alias = '',
-			)
-			# and login with simple dialog, alsways gives back proper userdata
-			user = cls.ask_login(odpath)
-			newus['magda'] = user['magda']
-			newus['alias'] = user['alias']
-			newus['password'] = user['password']
-			newus['version'] = cls.version
-			Pickles.write(settings_path, newus)
-			user_settings = d = Pickles.read(settings_path)
-
-		# if not odname in settings
-		# check if proper odname in settings (can change)
-		if not 'onedrive' in user_settings:
-			odpath = cls.ask_onedrive_path()
-			user_settings['onedrive'] = odpath
-			Pickles.write(settings_path, user_settings)
-		elif not os.path.isdir(user_settings['onedrive']):
-			odpath = cls.ask_onedrive_path()
-			user_settings['onedrive'] = odpath
-			Pickles.write(settings_path, user_settings)
-		else:
-			odpath = user_settings['onedrive']
+		while not cls.test_settings_thing(user_settings):
+			empty = cls.get_empty_settings()
+			odpath = cls.ask_onedrive_path() # always valid path, or exit
+			empty['onedrive'] = odpath
+			user = cls.ask_login(odpath) # always valid login or exit : alias, password, magda
+			empty['alias'] = user['alias']
+			empty['password'] = user['password']
+			empty['magda'] = user['magda']
+			cls.loglog(f"{empty}")
+			Pickles.write(settings_path, empty)
+			user_settings = Pickles.read(settings_path)
 
 		# OneDrive path is ok, login via current user-settings must CHECK
-		if cls.check_login(odpath, user_settings=user_settings) is None:
+		if cls.check_login(user_settings['onedrive'], user_settings['password']) is None:
 			cls.force_reset()
 			cls.exit_message("Butterfly needs to reset [password]. Please try again.")
 
@@ -144,8 +160,9 @@ class Mainroad:
 				continue
 			# correct path, test it, EXIT if wrong
 			cls.force_access('onedrive', odpath)
-			# return path
-			return odpath
+			if os.path.isdir(odpath):
+				# return path
+				return odpath
 
 	@classmethod
 	def ask_login(cls, odpath) -> dict:
@@ -161,19 +178,12 @@ class Mainroad:
 			if user is None:
 				continue
 			else:
+				user['password'] = password
 				return user
-			# repeat if false
+			# repeat
 
 	@classmethod
-	def check_login(cls, odpath, user_settings: dict=None, password: str=None) -> dict|None:
-		if not user_settings is None:
-			if 'password' in user_settings:
-				password = user_settings['password']
-			else:
-				return None
-		elif password is None:
-			return None
-
+	def check_login(cls, odpath, password: str) -> dict|None:
 		users = Pickles.read(f"{odpath}/system/s_srs.pickle")
 		for user in users: # users is list
 			if user['password'] == password:
@@ -190,19 +200,27 @@ class Mainroad:
 	def force_access(cls, name, accessdir):
 		if name in cls.forca:
 			return
+
+		if name == 'settings':
+			try:
+				os.makedirs(accessdir, exist_ok=True)
+			except Exception as e:
+				cls.loglog(f"Force access to dir [{accessdir}] failed. \n\t e = {e}")
+				cls.exit_message(f"Force access to dir [{accessdir}] failed. \n\t e = {e}")
+
 		try:
-			with open(os.path.join(accessdir, 'access.txt'), 'a') as f:
-				f.write(f"Force access to {name} \n\t{accessdir} \n\t@ {Timetools.now_string()}")
-				cls.loglog(f"Force access to {name} \n\t{accessdir} \n\t@ {Timetools.now_string()}")
+			with open(os.path.join(accessdir, 'access.txt'), 'w') as f:
+				f.write(f"Forcing access to [{name}] \n\t{accessdir} \n\t@ {Timetools.now_string()}")
+				cls.loglog(f"Forcing access to [{name}] \n\t{accessdir} \n\t@ {Timetools.now_string()}")
 				cls.forca.append(name)
 		except Exception as e:
-			cls.exit_message(f"Force access to {name} failed \n\t{e}")
+			cls.exit_message(f"Force access to [{name}] failed. \n\t e = {e}")
 		try:
 			pass
 			os.remove(os.path.join(accessdir, 'access.txt'))
 		except:
 			pass
-		cls.loglog(f"Force access to {name} GELUKT")
+		cls.loglog(f"Force access to [{name}] GELUKT")
 
 	@classmethod
 	def exit_message(cls, message: str):
@@ -212,13 +230,16 @@ class Mainroad:
 		sys.exit(1)
 
 	@classmethod
+	def get_settings_dir(cls) -> str:
+		sd = appdirs.user_config_dir()
+		if not os.path.isdir(sd):
+			cls.exit_message(f'Bizar. Your computer has no {sd} path.')
+		return os.path.join(appdirs.user_config_dir(), 'JeexButterfly')
+
+	@classmethod
 	def get_settings_path(cls) -> str:
 		# no testing involved
-		settings_dir = os.path.join(appdirs.user_config_dir(), 'JeexButterfly')
-		try:
-			os.remove(os.path.join(settings_dir, 'butterfly_props.pickle'))
-		except:
-			pass
+		settings_dir = cls.get_settings_dir()
 		settings_path = os.path.join(settings_dir, 'butterfly.pickle')
 		return settings_path
 
@@ -267,6 +288,23 @@ class Mainroad:
 			return None
 
 	@classmethod
+	def get_props(cls) -> dict | None:
+		propspad = cls.get_settings_path()
+		props = Pickles.read(propspad)
+		try:
+			return props
+		except:
+			return None
+
+	@classmethod
+	def set_props(cls, props: dict):
+		propspad = cls.get_settings_path()
+		try:
+			Pickles.write(propspad, props)
+		except Exception as e:
+			pass
+
+	@classmethod
 	def set_window_props(cls, window_props):
 		propspad = cls.get_settings_path()
 		# to avoid overwriting settings at a high pase
@@ -282,7 +320,8 @@ class Mainroad:
 	@classmethod
 	def loglog(cls, t: str):
 		if cls.logging:
-			pad = '/Users/jeex/Desktop/loglog.log'
+			desktop = os.path.normpath(os.path.expanduser("~/Desktop"))
+			pad = os.path.join(desktop, 'loglog.log')
 			with open(pad, 'a') as f:
 				f.write(t + '\n')
 
@@ -866,9 +905,11 @@ class FtpAnta:
 userspath = os.path.join(Mainroad.get_system_path(), 's_srs.pickle')
 userslist = [{'magda': ['docent'], 'alias': 'Iris', 'password': 'trwnvcksghdes'},
  {'magda': ['administratie', 'docent', 'beheer'],
-  'name': 'Jaqueline',
+  'alias': 'Jaqueline',
   'password': 'bnuskvbdhyswk'},
- {'magda': ['docent'], 'alias': 'Sarah', 'password': 'tgjklncdhsdlobg'},
+ {'magda': ['docent'],
+  'alias': 'Sarah',
+  'password': 'tgjklncdhsdlobg'},
  {'magda': ['administratie', 'docent', 'beheer', 'admin'],
   'alias': 'Victor',
   'password': 'nr1'},

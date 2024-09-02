@@ -31,6 +31,7 @@ class Window:
 			minimized=self._wprops[5],
 			focus=True,
 			confirm_close=False,
+			text_select=True,
 		)
 
 		self.venster.events.closing += self.on_closing
@@ -48,6 +49,17 @@ class Window:
 
 		webview.start(menu=self.make_menu(), ssl=False)
 
+	def soft_refresh(self):
+		props = Mainroad.get_props()
+		if props is None:
+			self.venster.destroy()
+		try:
+			props['last_url'] = '/'
+			Mainroad.set_props(props)
+		except:
+			pass
+		self.venster.destroy()
+
 	def force_refresh(self):
 		Mainroad.force_reset()
 		self.venster.destroy()
@@ -64,6 +76,7 @@ class Window:
 		return [
 			wm.Menu('Butterfly', [
 				wm.MenuAction('Close', self.stop),
+				wm.MenuAction('Soft Refresh', self.soft_refresh),
 				wm.MenuAction('Force Refresh & Close', self.force_refresh),
 				wm.MenuAction('Check for updates', self.check_updates),
 				]

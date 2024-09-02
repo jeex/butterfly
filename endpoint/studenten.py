@@ -1,6 +1,7 @@
 import re
 import os
 from copy import deepcopy
+import webbrowser
 from pprint import pprint as ppp
 from flask import redirect, request, Blueprint, render_template
 
@@ -602,6 +603,48 @@ def import_post():
 		preset=d,
 	)
 
+@ep_studenten.get('/invite-mail/<int:id>')
+def invite_mail(id):
+	students_o = Students()
+	statussen = get_statussen()
+	student = students_o.get_by_id(id)
+	if student is None:
+		return redirect('/studenten/studenten')
+
+	if student['s_status'] != 10: # listed
+		return redirect(f'/studenten/single/{id}')
+
+	invite = create_mail(student, 'confirm')
+	body = invite['text']
+	body = body.replace('<br>', "\n")
+	urimail = f"mailto:{student['email']}?subject={invite['subject']}&body={body}";
+	webbrowser.open(urimail)
+	student['s_status'] = 11
+	students_o.make_student_pickle(id, student)
+	return redirect(f'/studenten/single/{id}')
+
+@ep_studenten.get('/graded-mail/<int:id>')
+def graded_mail(id):
+	students_o = Students()
+	statussen = get_statussen()
+	student = students_o.get_by_id(id)
+	if student is None:
+		return redirect('/studenten/studenten')
+
+	if student['s_status'] == 21:
+		return redirect(f'/studenten/single/{id}')
+
+	graded = create_mail(student, 'grade')
+	body = graded['text']
+	body = body.replace('<br>', "\n")
+	urimail = f"mailto:{student['email']}?subject={graded['subject']}&body={body}";
+	webbrowser.open(urimail)
+	if student['grade'] >= 55:
+		student['s_status'] = 39
+	else:
+		student['s_status'] = 38
+	students_o.make_student_pickle(id, student)
+	return redirect(f'/studenten/single/{id}')
 
 # =========== helpers ========
 def fix_student_dir(id: int, old: dict|None, current: dict):
