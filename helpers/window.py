@@ -39,7 +39,7 @@ class Window:
 		self.venster.events.resized += self.on_venster_props
 		self.venster.events.moved += self.on_venster_props
 		self.venster.events.maximized += self.on_venster_props
-		self.venster.events.minimized += self.on_venster_props
+		# self.venster.events.minimized += self.on_venster_props
 
 		'''
 		self.venster.events.loaded += self.on_loaded
@@ -108,13 +108,16 @@ class Window:
 		self.venster.title = f'{self._title}'
 
 	def on_venster_props(self):
+		if self.venster.minimized:
+			# do not store in window props
+			return
 		self._wprops = [
 			self.venster.x,
 			self.venster.y,
 			self.venster.width,
 			self.venster.height,
 			self.venster.maximized,
-			self.venster.minimized
+			False
 		]
 		Mainroad.set_window_props(self._wprops)
 
