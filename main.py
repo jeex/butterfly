@@ -137,14 +137,14 @@ def asdatetime(i):
 	except:
 		return i
 
-
-@app.errorhandler(Exception)
-def handle_error(e):
-	Mainroad.loglog(f"error {e}")
-	Mainroad.loglog(f"\t{request.full_path}")
-	jus = UserSettings()
-	jus.set_prop('last_url', '')
-	return redirect('/home')
+if not Mainroad.devdev:
+	@app.errorhandler(Exception)
+	def handle_error(e):
+		Mainroad.loglog(f"error {e}")
+		Mainroad.loglog(f"\t{request.full_path}")
+		jus = UserSettings()
+		jus.set_prop('last_url', '')
+		return redirect('/home')
 
 
 @app.before_request
@@ -187,7 +187,6 @@ def before_request():
 			# remember the current url
 			jus.set_prop('last_url', rp)
 
-
 @app.after_request
 def add_header(res):
 	res.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, public, max-age=0"
@@ -228,8 +227,6 @@ app.register_blueprint(ep_beheer)
 from endpoint.website import ep_website
 app.register_blueprint(ep_website)
 
-
-
 # IMPORTANT login etc.
 if not app.config['initialized']:
 	Mainroad.before_webview_start()
@@ -239,6 +236,5 @@ if False and Mainroad.devdev:
 	app.run(port=5000)
 else:
 	Window(app)
-
 
 # pyinstaller -F -w --noconfirm --clean --add-data templates:templates --add-data static:static --icon=cpnits-picto.ico --name Butterfly main.py

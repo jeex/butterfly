@@ -33,6 +33,16 @@
                         {% endif %}
                     </p>
                     <p>
+                        {% set same = student._try('samestudent', default=[]) %}
+                        <label>
+                            Same student
+                            {% for ss in same %}
+                                <a class="asbutton" href="/studenten/single/{{ ss }}">{{ ss }}</a>
+                            {% endfor %}
+                        </label>
+                        <input type="text" name="samestudent" value="{{ student._same() }}" placeholder="comma sep. ID's">
+                    </p>
+                    <p>
                         <label>Created</label>
                         {{ student._try('created_ts')|datetime }}
                     </p>
@@ -445,29 +455,6 @@ let controle_note_submit = function(e){
     }else{
     }
 }
-{% if false and student._try('s_status') == 10 and not nieuw %}
-    let invite_mail = function(){
-        b = "{{ invite['text']|safe }}";
-        b = b.replaceAll('<br>', "\n");
-        e = "{{ student._try('email')|safe }}";
-        s = "{{ invite['subject']|safe }}";
-        document.location = "mailto:" + e + "?subject=" + s + "&body=" + encodeURIComponent(b);
-        $('select[name="s_status"] option[value="11"]').prop('selected', true);
-        $('form.single-form input[name="save"]').trigger('click');
-    }
-{% endif %}
-
-{% if student._try('grade_ts') > 0 %}
-    let grade_mail = function(){
-        b = "{{ grade['text']|safe }}";
-        b = b.replaceAll('<br>', "\n");
-        e = "{{ student._try('email')|safe }}";
-        s = "{{ grade['subject']|safe }}";
-        document.location = "mailto:" + e + "?subject=" + s + "&body=" + encodeURIComponent(b);
-        $('select[name="s_status"] option[value="11"]').prop('selected', true);
-        $('form.single-form input[name="save"]').trigger('click');
-    }
-{% endif %}
 
 $(function(){
     $('.todo-checkbox').on('click', function(){
@@ -478,14 +465,6 @@ $(function(){
     });
     $('form.note').on('submit', function(e){
         controle_note_submit(e)
-    });
-    $('#invite-mail').on('click', function(e){
-        // e.preventDefault();
-        // invite_mail();
-    });
-    $('#grade-mail').on('click', function(e){
-        e.preventDefault();
-        grade_mail();
     });
 });
 

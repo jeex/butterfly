@@ -75,6 +75,14 @@
                         {% for f in view['fields'] %}
                             {% if f in ['id', 'notes', 'circulars', 'customs', 'todo', 'kom_code', 'nhls_code', 'password'] %}
 
+                            {% elif f == 'samestudent' %}
+                                {% set same = s._try('samestudent', default=[]) %}
+                                <td class="dblignore">
+                                    {% for ss in same %}
+                                        <a class="asbutton" href="/studenten/single/{{ ss }}">{{ ss }}</a>
+                                     {% endfor %}
+                                </td>
+
                             {% elif f == 'pf_url' %}
                                 <td class="dblignore" data-csv="{{ s._try('pf_url') }}" data-th="pf_url">
                                     <input type="url" name="pf_url" value="{{ s._try('pf_url') }}" style="width: 5em; font-size: 1em; padding: 0.1em;">
@@ -90,7 +98,7 @@
                                 <td data-csv="{{ s._try(f)|date }}" data-th="{{ f }}">{{ s._try(f)|date }}</td>
 
                             {% elif f.startswith('c_') %}
-                                <td style="cursor:pointer; background-color: {{ s._circular(viewid, f)|circ }}; border: 1px solid {{ groep['color'] }}" data-cirname="{{ f }}" data-cirval="{{ s._circular(viewid, f) }}" data-csv="{{ s._circular(viewid, f) }}" class="contrast circular dblignore"></td>
+                                <td style="cursor:pointer; background-color: {{ s._circular(viewid, f)|circ }}; border: 1px solid white;" data-cirname="{{ f }}" data-cirval="{{ s._circular(viewid, f) }}" data-csv="{{ s._circular(viewid, f) }}" class="contrast circular dblignore"></td>
 
                             {% elif f.startswith('t_') %}
                                 <td data-cusname="{{ f }}" data-cusval="{{ s._custom(viewid, f) }}" data-csv="{{ s._custom(viewid, f) }}" class="contrast custom dblignore"><input style="width: 6em!important;" type="text" name="{{ f }}" value="{{ s._custom(viewid, f) }}"></td>

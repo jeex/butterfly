@@ -42,6 +42,8 @@ class Student(BaseClass):
 			s_ec = {'default': 0, 'from': 's_ec'},
 			s_course = {'default': 0, 'from': 's_course'},
 			s_stream = {'default': 0, 'from': 's_stream'},
+			# see also
+			samestudent={'default': []},  # llist with ids of same student
 
 			# list of notes models
 			notes = {'default': [], 'model': 'm_note'},
@@ -167,6 +169,12 @@ class  StudentJinja(JINJAstuff):
 		except:
 			return ''
 
+	def _same(self) -> str:
+		ss = self._try('samestudent', default=[])
+		sss = ', '.join(map(str, ss))
+		return sss
+
+
 # =============== ENDPOINTS =====================
 ep_studenten = Blueprint(
 	'ep_studenten', __name__,
@@ -254,6 +262,10 @@ def studenten_zoek():
 		students.append(StudentJinja(s, Student.get_model()))
 
 	sysls_o = Sysls()
+
+	if len(students) > 0:
+		searchterms = jus.add_searchterm(zoekterm)
+		# we have search results. add search term to user settings.
 
 	return render_template(
 		'studenten.html',
@@ -415,6 +427,9 @@ def single_edit_post(id):
 		kopie['s_term'] = student['s_term']
 		kopie['password'] = students_o.new_password(kopie['created_ts'])
 		kopie['id'] = students_o.new_student_id()
+		# this is same student
+		kopie['samestudent'] = student['samestudent']
+		kopie['samestudent'].append(id)
 		# get current year
 		print('kopieer')
 		# opslaan
@@ -773,7 +788,19 @@ def crunch_student(s, req):
 	for key in req:
 		if not key in empty.keys():
 			continue
-		if type(empty[key]) == str:
+		if key == 'samestudent':
+			ids = req[key].split(',')
+			newstudent[key] = list()
+			for iid in list(ids):
+				iid = Casting.int_(iid, default=None)
+				if iid is None:
+					continue
+				if iid < 1:
+					continue
+				newstudent[key].append(iid)
+			newstudent[key] = sorted(newstudent[key])
+
+		elif type(empty[key]) == str:
 			newstudent[key] = Casting.str_(req[key], '')
 		elif type(empty[key]) == int:
 			newstudent[key] = Casting.int_(req[key], 0)

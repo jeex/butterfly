@@ -28,7 +28,7 @@ class Window:
 			width=self._wprops[2],
 			height=self._wprops[3],
 			maximized=self._wprops[4],
-			minimized=self._wprops[5],
+			minimized=False,
 			focus=True,
 			confirm_close=False,
 			text_select=True,
@@ -36,18 +36,16 @@ class Window:
 
 		self.venster.events.closing += self.on_closing
 		self.venster.events.closed += self.on_closed
-		self.venster.events.resized += self.on_venster_props
+		# self.venster.events.resized += self.resizing
 		self.venster.events.moved += self.on_venster_props
 		self.venster.events.maximized += self.on_venster_props
 		# self.venster.events.minimized += self.on_venster_props
 
-		'''
-		self.venster.events.loaded += self.on_loaded
-		webview.events.closed += on_closed
-		webview.events.shown += on_shown
-		webview.events.loaded += on_loaded'''
-
 		webview.start(menu=self.make_menu(), ssl=False)
+
+	def resizing(self):
+
+		pass
 
 	def soft_refresh(self):
 		props = Mainroad.get_props()
@@ -82,34 +80,20 @@ class Window:
 				]
 	        ),
 		]
-		''' wm.Menu(
-						'Test Menu',
-						[
-							wm.MenuAction('Change Active Window Content', None),
-							wm.MenuSeparator(),
-							wm.Menu(
-								'Random',
-								[
-									wm.MenuAction('Click Me', None),
-									wm.MenuAction('File Dialog', None),
-								],
-							),
-						],
-					), 
-					'''
+
 	def on_closed(self):
 		pass
 
 	def on_closing(self):
-		pass
+		self.on_venster_props()
 
 	def on_loaded(self):
 		# bij elke reload van url
 		self.venster.title = f'{self._title}'
 
 	def on_venster_props(self):
-		if self.venster.minimized:
-			# do not store in window props
+		if self.venster.minimized or self.venster.x < 0 or self.venster.y < 0:
+			# do not store minimizer in window props
 			return
 		self._wprops = [
 			self.venster.x,

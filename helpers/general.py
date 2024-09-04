@@ -44,7 +44,7 @@ class Pickles:
 
 class Mainroad:
 	forca = list()
-	version = '1.06'
+	version = '1.07'
 	devdev = False
 	logging = False
 	updateurl = 'cpnits.com/butterfly.html'
@@ -89,7 +89,7 @@ class Mainroad:
 		# get user settings path
 		cls.force_access('settings', cls.get_settings_dir())
 		settings_path = cls.get_settings_path()
-		user_settings = d = Pickles.read(settings_path)
+		user_settings = Pickles.read(settings_path)
 		while not cls.test_settings_thing(user_settings):
 			empty = cls.get_empty_settings()
 			odpath = cls.ask_onedrive_path() # always valid path, or exit
@@ -305,17 +305,13 @@ class Mainroad:
 			pass
 
 	@classmethod
-	def set_window_props(cls, window_props):
+	def set_window_props(cls, window_props) -> bool:
 		propspad = cls.get_settings_path()
-		# to avoid overwriting settings at a high pase
-		try:
-			props = Pickles.read(propspad)
-			if props is None:
-				cls.loglog('windows props setting goes wrong')
-			props['window'] = window_props
-			Pickles.write(propspad, props)
-		except:
-			pass
+		props = Pickles.read(propspad)
+		if props is None:
+			return False
+		props['window'] = window_props
+		return Pickles.write(propspad, props)
 
 	@classmethod
 	def loglog(cls, t: str):

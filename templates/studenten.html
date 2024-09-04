@@ -47,6 +47,7 @@
                     <th id="s_uni"><span></span>institute</th>
                     <th id="s_program"><span></span>program</th>
                     <th id="created_ts"><span></span>created</th>
+                    <th id="samestudent"><span></span>same</th>
                 </tr>
             </thead>
             <tbody>
@@ -102,6 +103,12 @@
                     <td data-csv="{{ item['name']|nbsp|safe }}" data-th="s_program" data-idnr="{{ item['id'] }}" style="background-color: {{ item['color'] }};">{{ item['name']|nbsp|safe }}</td>
 
                     <td data-csv="{{ s._try('created_ts')|date }}" data-th="created_ts">{{ s._try('created_ts')|date }}</td>
+
+                    {% set same = s._try('samestudent', default=[]) %}
+                    {% for ss in same %}
+                        <td><a class="asbutton" href="/studenten/single/{{ ss }}">{{ ss }}</a></td>
+                    {% endfor %}
+                    <td></td>
                 </tr>
             {% endfor %}
             </tbody>

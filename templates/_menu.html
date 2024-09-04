@@ -38,9 +38,14 @@
             {% endif %}
 
         </ul>
-        {% if menuitem in ['studenten', 'groepen'] %}
+        {% if menuitem in ['home', 'studenten', 'groepen'] %}
             <form name="menu-zoek" style="margin-left: 0.25em;" action="/studenten/zoek" method="get">
-                <input style="height: 2.1em; padding: 0 0.5em;" type="text" name="s" value="" placeholder="Search by name">
+                <input style="height: 2.1em; padding: 0 0.5em;" type="text" name="s" value="" placeholder="Search by name" list="searchterms">
+                    <datalist id="searchterms">
+                        {% for ss in props.get_searchterms() %}
+                            <option value="{{ ss }}">{{ ss }}</option>
+                        {% endfor %}
+                    </datalist>
                 <input style="height: 2.4em;" type="submit" name="go" value="Search">
             </form>
         {% endif %}

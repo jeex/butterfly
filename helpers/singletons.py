@@ -854,6 +854,9 @@ class UserSettings(metaclass=UserSetingsMeta):
 	def odpad(self):
 		return self._onedrive_path
 
+	def settingspad(self):
+		return Mainroad.get_settings_dir()
+
 	def magda(self, rol: list, alias: str = None) -> bool:
 		# alias is de alias van het ding
 		if 'admin' in self._rollen:
@@ -886,6 +889,22 @@ class UserSettings(metaclass=UserSetingsMeta):
 
 	def get_props(self):
 		return self._props
+
+	def get_searchterms(self) -> list:
+		try:
+			return self.get_prop('searchterms', default=[])
+		except:
+			return []
+
+	def add_searchterm(self, st: str) -> list:
+		current = self.get_searchterms()
+		if st in current:
+			return current
+		current.insert(0, st)
+		current = current[:10]
+		self.set_prop('searchterms', current)
+		return current
+
 
 '''
 class HuntsMeta(type):

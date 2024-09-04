@@ -8,6 +8,7 @@
     <main class="home">
         <h1>Welcome at CPNITS Butterfly, {{ props.alias() }}</h1>
         <p>The path to your OneDrive is: <strong>{{ props.odpad() }}</strong></p>
+        <p>The path to your Settings is: <strong>{{ props.settingspad() }}</strong></p>
         <!-- <a class="asbutton" href="#">werkt nog niet</a> -->
         {% if bericht is not none %}
             <div style="margin: 1em; border: 2px solid var(--signaal);padding: 1em;">{{ bericht }}</div>

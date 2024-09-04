@@ -367,10 +367,5 @@ $(function(){
 
     $('#csv-area').css('width', $('table').width());
 
-    // als groep, randen kleuren in groepskleur
-    {% if groep %}
-        $('tr').css('border-color', '{{ groep['color'] }}');
-    {% endif %}
-
     click_to_group();
 });
