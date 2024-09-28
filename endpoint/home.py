@@ -29,18 +29,24 @@ def home():
 
 	students_o = Students()
 	todos = list()
-	pergroep = dict()
+	mijngroepen = dict()
+	dijngroepen = dict()
 	studenten = students_o.all()
 	sysls_o = Sysls()
 	groepen = dict(sysls_o.get_sysl('s_group'))
 	for s in studenten.values():
 		for n in s['notes']:
 			if n['done'] == 0:
-				if not s['s_group'] in pergroep:
-					pergroep[s['s_group']] = list()
-				pergroep[s['s_group']].append(StudentJinja(s, Student.get_model()))
+				if n['alias'] == jus.alias():
+					if not s['s_group'] in mijngroepen:
+						mijngroepen[s['s_group']] = list()
+					mijngroepen[s['s_group']].append(StudentJinja(s, Student.get_model()))
+				else:
+					if not s['s_group'] in dijngroepen:
+						dijngroepen[s['s_group']] = list()
+					dijngroepen[s['s_group']].append(StudentJinja(s, Student.get_model()))
 
-	bericht = Mainroad.get_message()
+	bericht = Mainroad.get_message(newline='<br>')
 	if bericht == '':
 		bericht = None
 
@@ -48,7 +54,9 @@ def home():
 		'home.html',
 		menuitem='home',
 		props=jus,
-		pergroep=pergroep,
+		mijn=mijngroepen,
+		dijn=dijngroepen,
 		groepen=groepen,
 		bericht=bericht,
+		logging=Mainroad.logging,
 	)

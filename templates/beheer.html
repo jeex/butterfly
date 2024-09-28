@@ -32,37 +32,42 @@
     </header>
     <main>
         {% if syslname != '' %}
-            <section class="form">
-                <form class="edit" name="edit" action="" method="post">
-                    <p>
-                        <span>id</span>
-                        <input readonly type="number" name="id" value="">
-                        <input type="hidden" name="ordering" value="">
-                    </p>
-                    <p>
-                        <span>name</span>
-                        <input type="text" name="name" value="">
-                    </p>
-                    <p>
-                        <span>color</span>
-                        <input type="color" name="color" value="#ffffff">
-                    </p>
-                    <p>
-                        <span>extra</span>
-                        <input type="text" name="extra" value="">
-                    </p>
-                    <p>
-                        <span>status</span>
-                        passive: <input type="radio" name="status" value="0" checked>
-                        active: <input type="radio" name="status" value="1">
-                    </p>
-                    <p>
-                        <span><button class="new" style="color: green;">New</button></span>
-                        <input class="verborgen" style="color: var(--signaal);" type="submit" name="action" value="Delete">
-                        <input class="verborgen" type="submit" name="action" value="Save">
-                    </p>
-                </form>
-            </section>
+            {% if thysl is not none %}
+                <section class="form">
+                    <form class="edit" name="edit" action="/beheer/{{ syslname }}/{{ id }}" method="post">
+                        <p>
+                            <span>id</span>
+                            <input readonly type="number" name="id" value="{{ thysl._try('id') }}">
+                            <input type="hidden" name="ordering" value="">
+                        </p>
+                        <p>
+                            <span>name</span>
+                            <input type="text" name="name" value="{{ thysl._try('name') }}">
+                        </p>
+                        <p>
+                            <span>color</span>
+                            <input type="color" name="color" value="{{ thysl._try('color') }}">
+                        </p>
+                        <p>
+                            <span>extra</span>
+                            <input type="text" name="extra" value="{{ thysl._try('extra') }}">
+                        </p>
+                        <p>
+                            <span>status</span>
+                            passive: <input type="radio" name="status" value="0" {{ 'checked' if thysl._try('status') == 0 }}>
+                            active: <input type="radio" name="status" value="1" {{ 'checked' if thysl._try('status') == 1 }}>
+                        </p>
+                        <p>
+                            <span><button class="new" style="color: green;">New</button></span>
+                            {% if props.magda(['admin']) %}
+                                <input class="" style="color: var(--signaal);" type="submit" name="action" value="Delete">
+                            {% endif %}
+                            <input class="" type="submit" name="action" value="Save">
+                        </p>
+                    </form>
+                </section>
+            {% endif %}
+
             <section class="table">
                 <form name="order" method="post" action="/beheer/ordering/{{ syslname }}">
                     <input type="hidden" name="ordering" value="">
@@ -83,7 +88,7 @@
                     <tbody class="sort">
                     {% for row in allitems %}
                         <tr data-id="{{ row._try('id') }}" data-ordering="{{ row._try('ordering') }}">
-                            <td class="idfield">{{ row._try('id') }}</td>
+                            <td class="idfield"><a class="asbutton" href="/beheer/{{ syslname }}/{{ row._try('id') }}">{{ row._try('id') }}</a></td>
                             <td>{{ row._try('name')|nonone }}</td>
                             <td class="kleur" style="background-color: {{ row._try('color') }};">{{ row._try('color')|nonone }}</td>
                             <td>{{ row._try('extra')|nonone }}</td>

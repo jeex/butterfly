@@ -144,3 +144,9 @@ h2:not(:first-of-type){
 .cusfield{
     background-color: snow;
 }
+.view-links{
+    width: 100%;
+}
+.view-links td a{
+    font-size: 1em;
+}

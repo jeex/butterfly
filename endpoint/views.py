@@ -210,3 +210,18 @@ def group_post(viewid):
 	views_o.make_view(view)
 	return redirect(f"/views/{viewid}")
 
+@ep_views.post('/sort-views')
+def sort_views():
+	if not 'viewids' in request.form:
+		return redirect(f"/views")
+
+	try:
+		ids: list = Casting.str_(request.form['viewids'], '').split(',')
+		for i in range(len(ids)):
+			ids[i] = Casting.int_(ids[i], 0)
+	except:
+		return redirect(f"/views")
+
+	views_o = Views()
+	views_o.reorder_views(ids)
+	return redirect(f"/views")

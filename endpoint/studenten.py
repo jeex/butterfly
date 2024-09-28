@@ -1,12 +1,17 @@
 import re
 import os
 from copy import deepcopy
+import random
 import webbrowser
+import unicodedata
+import pylightxl as xl
 from pprint import pprint as ppp
 from flask import redirect, request, Blueprint, render_template
 
-from helpers.general import Casting, Timetools, IOstuff, ListDicts, JINJAstuff, BaseClass
+from helpers.general import Casting, Timetools, IOstuff, ListDicts, JINJAstuff, BaseClass, Mainroad
 from helpers.singletons import UserSettings, Sysls, Students, Emails
+
+DEFAULTSTUDENTEN = 'registratie'
 
 # handles one student
 class Student(BaseClass):
@@ -188,12 +193,15 @@ menuitem = 'studenten'
 
 @ep_studenten.get('/<path:filter>')
 @ep_studenten.get('/')
-def studenten(filter='studenten'):
+def studenten(filter=''):
+	if filter == '':
+		return redirect(f'/studenten/{DEFAULTSTUDENTEN}')
+
 	students_o = Students()
 	# get and set filter
 	sta, fil, tel, act = filter_stuff()
 	if not filter in sta:
-		return redirect('/studenten/studenten')
+		return redirect(f'/studenten/{DEFAULTSTUDENTEN}')
 
 	all = students_o.all_as_lod()
 
@@ -236,21 +244,51 @@ def studenten_zoek():
 	except:
 		zoekterm = ''
 	if zoekterm == '':
+		print('ontsnapt')
 		return redirect(jus.get_prop('last_url', default='/home'))
 
+	# determine where search is started
+	if not 'comes-from' in request.args:
+		zoektab = 'studenten'
+		zoekfilter = 'alle'
+	elif 'home' in request.args['comes-from']:
+		zoektab = 'studenten'
+		zoekfilter = 'alle'
+	elif 'groepen' in request.args['comes-from']:
+		# search comes from groups. Only search in active groups
+		zoektab = 'groepen'
+		zoekfilter = ''
+	else:
+		zf = Casting.str_(request.args['comes-from'], default='alle')
+		try:
+			niks, zoektab, zoekfilter = zf.split('/')
+			zoektab = zoektab.strip()
+			zoekfilter = zoekfilter.strip()
+		except:
+			zoektab = 'studenten'
+			zoekfilter = 'alle'
+
+	# filter and search
 	students_o = Students()
 	all = students_o.all_as_lod()
 	gevonden = list()
-	for a in all:
-		if re.search(zoekterm, f"{a['firstname']} {a['lastname']} {a['email']}", re.IGNORECASE):
-			gevonden.append(a)
-
-	if len(gevonden) == 0:
-		return redirect(jus.get_prop('last_url', default='/home'))
+	if zoektab == 'studenten':
+		for a in all:
+			a_filter = status_2_filter(a['s_status'])
+			if a_filter != zoekfilter and not zoekfilter == 'alle':
+				continue
+			# print(zoektab, zoekfilter, a_filter)
+			if re.search(zoekterm, f"{a['firstname']} {a['lastname']} {a['email']}", re.IGNORECASE):
+				gevonden.append(a)
+	elif zoektab == 'groepen':
+		activegroupids = get_active_groups()
+		for a in all:
+			if not a['s_group'] in activegroupids:
+				continue
+			if re.search(zoekterm, f"{a['firstname']} {a['lastname']} {a['email']}", re.IGNORECASE):
+				gevonden.append(a)
 
 	sta, fil, tel, act = filter_stuff()
-	groepmenu = filter in ['registratie', 'studenten', 'beoordelen']
-
 	students = list()
 	for s in gevonden:
 		s['filter'] = get_student_filter(s, sta)
@@ -263,21 +301,22 @@ def studenten_zoek():
 
 	sysls_o = Sysls()
 
-	if len(students) > 0:
-		searchterms = jus.add_searchterm(zoekterm)
-		# we have search results. add search term to user settings.
+	searchterms = jus.add_searchterm(zoekterm)
+	# we have search results. add search term to user settings.
 
 	return render_template(
 		'studenten.html',
 		menuitem=menuitem,
-		groepmenu=groepmenu,
 		props=jus,
 		students=students,
-		filter='alle',
+		filter=zoekfilter,
 		filters=fil,
 		tellers=tel,
 		actiefstats=act,
 		zoekterm=zoekterm,
+		zoektab=zoektab,
+		zoekfilter=zoekfilter,
+		comesfrom=f"/{zoektab}/{zoekfilter}",
 		sysls=sysls_o.get(),
 	)
 
@@ -318,7 +357,7 @@ def single_get(id):
 	statussen = get_statussen()
 	student = students_o.get_by_id(id)
 	if student is None:
-		return redirect('/studenten/studenten')
+		return redirect(f'/studenten/{DEFAULTSTUDENTEN}')
 
 	student['filter'] = get_student_filter(student, statussen)
 	student['notes'] = ListDicts.sortlistofdicts(student['notes'], 'created_ts', reverse=True)
@@ -661,6 +700,58 @@ def graded_mail(id):
 	students_o.make_student_pickle(id, student)
 	return redirect(f'/studenten/single/{id}')
 
+@ep_studenten.post('/to-excel')
+def to_excel_post():
+	if not 'comes-from' in request.form or not 'to-excel' in request.form or not 'csv-data' in request.form:
+		print('incompleet form')
+		return redirect(request.form['comes-from'])
+
+	try:
+		csvdata = request.form['csv-data'].strip()
+		csvdata = unicodedata.normalize('NFKC', csvdata)
+		csvdata = csvdata.split('\r\n')
+		ehead = csvdata[0].split(';')
+		erows = csvdata[1:]
+		if 'shuffle' in request.form:
+			if Casting.int_(request.form['shuffle'], default=0) == 1:
+				random.shuffle(erows)
+	except:
+		return redirect(request.form['comes-from'])
+
+	# now convert to and open excel
+	try:
+		db = xl.Database()
+		db.add_ws(ws="students")
+		row = 1
+		col = 1
+		for h in ehead:
+			db.ws(ws="students").update_index(row=1, col=col, val=h)
+			col += 1
+		row += 1
+		for line in erows:
+			items = line.split(';')
+			col = 1
+			print()
+			for item in items:
+				db.ws(ws="students").update_index(row=row, col=col, val=item)
+				col += 1
+			row += 1
+
+		desktoppad = Mainroad.get_desktop_path()
+		naam = 'students'
+		if 'group-name' in request.form:
+			nm = Casting.str_(request.form['group-name'], default='')
+			if len(nm) > 0:
+				naam = nm
+		xl.writexl(db=db, fn=f"{desktoppad}/{naam}.xlsx")
+	except Exception as e:
+		print('error met excel', e)
+
+	return redirect(request.form['comes-from'])
+
+
+
+
 # =========== helpers ========
 def fix_student_dir(id: int, old: dict|None, current: dict):
 	students_o = Students()
@@ -701,9 +792,19 @@ def fix_student_dir(id: int, old: dict|None, current: dict):
 
 def get_student_filter(s, sta):
 	for st in sta:
+		if st == 'alle':
+			continue
 		if s['s_status'] in sta[st]:
 			return st
-	return ''
+	return 'alle'
+
+def is_active_in_group(s, sta) -> bool:
+	for st in sta:
+		if not st in ['studenten', 'registratie', 'beoordelen']:
+			continue
+		if s['s_status'] in sta[st]:
+			return True
+	return False
 
 def from_sysl(veld, d: dict):
 	sysls_o = Sysls()
@@ -752,21 +853,41 @@ def create_mail(student, welk) -> dict:
 	)
 	return email
 
-def get_statussen():
-	return dict(
-		registratie=[0, 10, 11, 12],
-		studenten=[20],
-		beoordelen=[21, 22],
-		alumni=[39],
-		niet=[30, 31, 38],
-		noshow=[14, 16, 18],
-		alle=list(range(0, 100)),
-	)
+def get_statussen() -> dict:
+	sysls_o = Sysls()
+	ss = sysls_o.get_stud_statussen()
+	return ss
+
+def get_status_filters() -> list:
+	ss = get_statussen()
+	sl = list(ss.keys())
+	# put alle at end
+	sl.remove('alle')
+	sl.append('alle')
+	return sl
+
+def status_2_filter(status: int) -> str:
+	# put in a s_statussen_id and get back the filter
+	sss = get_statussen()
+	for f, s in get_statussen().items():
+		if status in s and f != 'alle':
+			return f.strip()
+	return 'alle'
+
+def get_active_groups():
+	sysls_o = Sysls()
+	all = sysls_o.get_sysl('s_group')
+	allegroepen = ListDicts.sortlistofdicts(list(all.values()), 'ordering')
+	active = list()
+	for a in list(allegroepen):
+		if a['status'] == 1:
+			active.append(a['id'])
+	return active
 
 def filter_stuff():
 	students_o = Students()
 	statussen = get_statussen()
-	filters = ['registratie', 'studenten', 'beoordelen', 'alumni', 'niet', 'noshow', 'alle']
+	filters = get_status_filters()
 	# behoort bij het main filter filternames()
 	tellers = dict()
 	all = students_o.all_as_lod()

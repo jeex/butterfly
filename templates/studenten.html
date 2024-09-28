@@ -5,9 +5,6 @@
     {% include '_menu.html' %}
         <menu class="submenu">
             <ul>
-                {% if zoekterm is not none %}
-                    <li class="actief">{{ zoekterm }}</li>
-                {% endif %}
                 {% for thing in filters %}
                     <li class="{{ 'actief'|safe if thing == filter }}"><a href="/studenten/{{ thing }}">{{ thing|filtername }} [{{ tellers[thing] }}]</a></li>
                 {% endfor %}
@@ -114,7 +111,7 @@
             </tbody>
         </table>
 
-        {% if props.magda(['docent', 'beheer']) %}
+        {% if props.magda(['docent', 'beheer']) and students|length > 0 %}
             <form class="links" style="display: block;" name="to-collectief" action="/studenten/collectief" method="post">
                 <input type="hidden" name="col-ids" value="">
                 <select name="to-group">
@@ -133,15 +130,18 @@
             </form>
         {% endif %}
 
-        {% if props.magda(['administratie', 'beheer']) %}
-            <div class="links" >
-                <input type="submit" name="to-emails" value="Email-adressen" >
-                <input type="submit" name="to-csv" value="Als CSV" >
-                <input style="background-color: var(--menu);" type="submit" name="to-excel" value="Download als CSV" >
-            </div>
-            <div class="links" >
-                <textarea id="csv-area" style="width: 800px;" rows="10"></textarea>
-            </div>
+        {% if props.magda(['administratie', 'beheer']) and students|length > 0 %}
+            <form action="/studenten/to-excel" method="post">
+                <div class="links" >
+                    <input type="hidden" name="comes-from" value="{{ url_for(request.endpoint, **request.view_args) }}">
+                    <input type="button" name="to-emails" value="Email-adressen" >
+                    <input type="button" name="to-csv" value=" As CSV " >
+                    <input style="background-color: var(--menu);" type="submit" name="to-excel" value="Download as Excel" >
+                </div>
+                <div class="links" >
+                    <textarea name="csv-data" id="csv-area" style="width: 800px;" rows="10"></textarea>
+                </div>
+            </form>
         {% endif %}
     </main>
 

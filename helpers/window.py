@@ -11,6 +11,10 @@ class Window:
 	_title = f'CPNITS Butterfly {Mainroad.version}'
 
 	def __init__(self, app):
+		self.app = app
+		self.init()
+
+	def init(self):
 		wprops = Mainroad.get_window_props()
 		if wprops is None:
 			sys.exit('Ohoh. Groot probleem')
@@ -18,11 +22,10 @@ class Window:
 		if isinstance(wprops, list):
 			if len(wprops) == 6:
 				self._wprops = wprops
-		self.app = app
 
 		self.venster = webview.create_window(
 			self._title,
-			app,
+			self.app,
 			x=self._wprops[0],
 			y=self._wprops[1],
 			width=self._wprops[2],
@@ -44,23 +47,30 @@ class Window:
 		webview.start(menu=self.make_menu(), ssl=False)
 
 	def resizing(self):
-
 		pass
 
 	def soft_refresh(self):
 		props = Mainroad.get_props()
 		if props is None:
 			self.venster.destroy()
+
+		# reset props last url
 		try:
 			props['last_url'] = '/'
 			Mainroad.set_props(props)
 		except:
-			pass
-		self.venster.destroy()
+			self.venster.destroy()
+
+		# now refresh in flask app
+		self.venster.load_url('/refresh')
+
 
 	def force_refresh(self):
 		Mainroad.force_reset()
 		self.venster.destroy()
+
+	def logging(self):
+		Mainroad.toggle_logging()
 
 	def stop(self):
 		self.on_venster_props()
@@ -77,6 +87,7 @@ class Window:
 				wm.MenuAction('Soft Refresh', self.soft_refresh),
 				wm.MenuAction('Force Refresh & Close', self.force_refresh),
 				wm.MenuAction('Check for updates', self.check_updates),
+				wm.MenuAction('Logging On/Off', self.logging)
 				]
 	        ),
 		]
@@ -104,5 +115,4 @@ class Window:
 			False
 		]
 		Mainroad.set_window_props(self._wprops)
-
 

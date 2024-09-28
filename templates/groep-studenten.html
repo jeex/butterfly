@@ -16,7 +16,7 @@
                 {% endif %}
 
                 {% for thing in groepen %}
-                    {% if thing['status'] == 1 and thing['id'] not in mijngroepen %}
+                    {% if thing['id'] not in mijngroepen %}
                         <li class="contrast" style="border: 1px solid white; background-color: {{ thing['color'] }}"><a href="/groepen/{{ thing['id'] }}">{{ thing['name'] }}</a></li>
                     {% endif %}
                 {% endfor %}
@@ -135,16 +135,21 @@
                 <input type="submit" name="save" value="Ga" >
             </form>
 
-            <div class="links" >
-                {% if 'email' in view['fields'] %}
-                    <input type="submit" name="to-emails" value="Email-adressen" >
-                {% endif %}
-                <input type="submit" name="to-csv" value="Als CSV" >
-                <input style="background-color: var(--menu);" type="submit" name="to-excel" value="Download als CSV" >
-            </div>
-            <div class="links" >
-                <textarea id="csv-area" style="width: 800px;" rows="10"></textarea>
-            </div>
+            <form action="/studenten/to-excel" method="post">
+                <div class="links" >
+                    <input type="hidden" name="comes-from" value="{{ url_for(request.endpoint, **request.view_args) }}">
+                    <input type="hidden" name="group-name" value="{{ groep['name'] }}">
+                    {% if 'email' in view['fields'] %}
+                        <input type="button" name="to-emails" value="Email-adressen" >
+                    {% endif %}
+                    <input type="button" name="to-csv" value=" As CSV " >
+                    <input type="checkbox" name="shuffle" value="1"> shuffle
+                    <input style="background-color: var(--menu);" type="submit" name="to-excel" value="Download as Excel" >
+                </div>
+                <div class="links" >
+                    <textarea name="csv-data" id="csv-area" style="width: 800px;" rows="10"></textarea>
+                </div>
+            </form>
         {% endif %}
     </main>
 <script>

@@ -3,7 +3,13 @@ import logging
 
 from helpers.general import Casting, Timetools, Mainroad
 from helpers.window import Window
-from helpers.singletons import UserSettings, Sysls
+from helpers.singletons import (
+		SyslsMeta, Sysls,
+		EmailsMeta, Emails,
+		ViewsMeta, Views,
+		StudentsMeta, Students,
+		UserSetingsMeta, UserSettings,
+	)
 
 app = Flask(__name__, template_folder='templates')
 app.config['DEBUG'] = Mainroad.devdev
@@ -23,7 +29,6 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 300
 app.config['initialized'] = False
 
 app.url_map.strict_slashes = False
-
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
@@ -137,16 +142,6 @@ def asdatetime(i):
 	except:
 		return i
 
-if not Mainroad.devdev:
-	@app.errorhandler(Exception)
-	def handle_error(e):
-		Mainroad.loglog(f"error {e}")
-		Mainroad.loglog(f"\t{request.full_path}")
-		jus = UserSettings()
-		jus.set_prop('last_url', '')
-		return redirect('/home')
-
-
 @app.before_request
 def before_request():
 	rp = request.full_path
@@ -203,6 +198,23 @@ def add_header(res):
 def index():
 	return redirect('/home')
 
+@app.get('/refresh')
+def refresh():
+	# maak schoon
+	d = Sysls()
+	SyslsMeta.destroy(d)
+	d = Emails()
+	EmailsMeta.destroy(d)
+	d = Views()
+	ViewsMeta.destroy(d)
+	d = Students()
+	StudentsMeta.destroy(d)
+	d = UserSettings()
+	UserSetingsMeta.destroy(d)
+	Mainroad.before_webview_start()
+
+	return redirect('/home')
+
 from endpoint.home import ep_home
 app.register_blueprint(ep_home)
 
@@ -229,12 +241,24 @@ app.register_blueprint(ep_website)
 
 # IMPORTANT login etc.
 if not app.config['initialized']:
+	Mainroad.devdev = False
+	Mainroad.version = '1.08'
 	Mainroad.before_webview_start()
+	Mainroad.loglog(f"\nSTART {Timetools.now_string()}\n")
 	app.config['initialized'] = True
+
+if not Mainroad.devdev:
+	@app.errorhandler(Exception)
+	def handle_error(e):
+		Mainroad.loglog(f"error {e}")
+		Mainroad.loglog(f"\t{request.full_path}")
+		jus = UserSettings()
+		jus.set_prop('last_url', '')
+		return redirect('/home')
 
 if False and Mainroad.devdev:
 	app.run(port=5000)
 else:
 	Window(app)
 
-# pyinstaller -F -w --noconfirm --clean --add-data templates:templates --add-data static:static --icon=cpnits-picto.ico --name Butterfly main.py
+# pyinstaller -F -w --noconfirm --clean --add-data templates:templates --add-data static:static --icon=cpnits-picto.png --name Butterfly main.py

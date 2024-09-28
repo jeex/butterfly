@@ -22,6 +22,11 @@ class SyslsMeta(type):
 			cls._instances[cls] = instance
 		return cls._instances[cls]
 
+	@classmethod
+	def destroy(metacls, cls):
+		if cls in metacls._instances:
+			del metacls._instances[cls]
+
 class Sysls(metaclass=SyslsMeta):
 	_systempath = ''
 	_sysls = [
@@ -60,6 +65,7 @@ class Sysls(metaclass=SyslsMeta):
 			else:
 				self.error_in_sysmem = True
 				pass
+		self.make_stud_statussen()
 
 	def is_valid(self):
 		return not self.error_in_sysmem
@@ -173,6 +179,31 @@ class Sysls(metaclass=SyslsMeta):
 			d[field] = val['default']
 		return d
 
+	def make_stud_statussen(self):
+		# makes a list like:
+		default = dict(
+			registratie=[0, 10, 11, 12],
+			studenten=[20],
+			beoordelen=[21, 22],
+			alumni=[39],
+			niet=[31, 38],
+			noshow=[14, 16, 18, 30],
+			alle=list(range(0, 100)),
+		)
+		ss = self.get_sysl('s_status')
+		statussen = dict(alle=list())
+		for item in ss.values():
+			statussen['alle'].append(item['id'])
+			if item['extra'] == '' or item['extra'] == None:
+				continue
+			if not item['extra'] in statussen:
+				statussen[item['extra']] = list()
+			statussen[item['extra']].append(item['id'])
+		self.stud_statussen = statussen
+
+	def get_stud_statussen(self):
+		return self.stud_statussen
+
 class EmailsMeta(type):
 	_instances = {}
 	def __call__(cls, *args, **kwargs):
@@ -180,6 +211,11 @@ class EmailsMeta(type):
 			instance = super().__call__(*args, **kwargs)
 			cls._instances[cls] = instance
 		return cls._instances[cls]
+
+	@classmethod
+	def destroy(metacls, cls):
+		if cls in metacls._instances:
+			del metacls._instances[cls]
 
 class Emails(metaclass=EmailsMeta):
 	_emailspath = ''
@@ -230,11 +266,16 @@ class ViewsMeta(type):
 			cls._instances[cls] = instance
 		return cls._instances[cls]
 
+	@classmethod
+	def destroy(metacls, cls):
+		if cls in metacls._instances:
+			del metacls._instances[cls]
+
 class Views(metaclass=ViewsMeta):
 	_viewspath = ''
 	_defaultkey = 1723028433
 	_defaultname = 'default'
-	_sysmem = dict()
+	_sysmem = OrderedDict()
 
 	def __init__(self):
 		self.init()
@@ -253,7 +294,7 @@ class Views(metaclass=ViewsMeta):
 
 	def init(self):
 		self._viewspath = Mainroad.get_views_path()
-		self._sysmem = dict()
+		self._sysmem = OrderedDict()
 		if not os.path.isdir(self._viewspath):
 			os.mkdir(self._viewspath)
 		for fname in os.listdir(self._viewspath):
@@ -296,6 +337,35 @@ class Views(metaclass=ViewsMeta):
 		except:
 			return None
 
+	def get_by_similar_viewname(self, groupid: int, viewid: int) -> int:
+		def firstpart(viewname: str) -> str:
+			viewname = viewname.replace('-', ' ').replace('_', ' ')
+			return viewname.split(' ')[0].strip()
+
+		simname = firstpart(self._sysmem[viewid]['name'])
+		for k, v in self._sysmem.items():
+			if not groupid in self._sysmem[k]['groups']:
+				continue
+			fp = firstpart(v['name'])
+			print('\t', fp, v['name'], k)
+			if simname == fp:
+				return k
+		return 0
+
+	def is_group_in_view(self, groupid: int, viewid: int) -> bool:
+		if viewid == 1:
+			return True
+		if not viewid in self._sysmem:
+			return False
+		return groupid in self._sysmem[viewid]['groups']
+
+	def get_views_by_groupid(self, groupid: int) -> OrderedDict:
+		g_views = OrderedDict()
+		for key in self._sysmem:
+			if self.is_group_in_view(groupid, key):
+				g_views[key] = deepcopy(self._sysmem[key])
+		return g_views
+
 	def delete(self, key: int):
 		# but not if key is default view
 		if key in self._sysmem and key != self._defaultkey:
@@ -303,7 +373,14 @@ class Views(metaclass=ViewsMeta):
 			Pickles.delete(pad)
 			self.init()
 
-	def mijn_views(self):
+	def reorder_views(self, idslist: list) -> bool:
+		for id in idslist:
+			if not id in self._sysmem:
+				continue
+			self._sysmem.move_to_end(id, last=True)
+		return True
+
+	def mijn_views(self) -> list:
 		jus = UserSettings()
 		all = self._sysmem
 		mijnviews = list()
@@ -312,7 +389,7 @@ class Views(metaclass=ViewsMeta):
 				mijnviews.append(key)
 		return mijnviews
 
-	def mijn_groepen(self, all=None):
+	def mijn_groepen(self, all=None) -> list:
 		# groepen waarbij ik een view heb
 		jus = UserSettings()
 		all = self._sysmem
@@ -332,6 +409,11 @@ class StudentsMeta(type):
 			instance = super().__call__(*args, **kwargs)
 			cls._instances[cls] = instance
 		return cls._instances[cls]
+
+	@classmethod
+	def destroy(metacls, cls):
+		if cls in metacls._instances:
+			del metacls._instances[cls]
 
 class Students(metaclass=StudentsMeta):
 	_stud_p_path = ''
@@ -797,6 +879,10 @@ class UserSetingsMeta(type):
 			cls._instances[cls] = instance
 		return cls._instances[cls]
 
+	@classmethod
+	def destroy(metacls, cls):
+		if cls in metacls._instances:
+			del metacls._instances[cls]
 class UserSettings(metaclass=UserSetingsMeta):
 	_settings_path = ''
 	_onedrive_path = ''

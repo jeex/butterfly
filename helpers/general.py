@@ -2,6 +2,7 @@ import bleach
 from datetime import datetime
 import pytz
 import time
+import pathlib
 import os
 from urllib.parse import quote_plus as kwoot
 import re
@@ -44,7 +45,7 @@ class Pickles:
 
 class Mainroad:
 	forca = list()
-	version = '1.07'
+	version = '1.08'
 	devdev = False
 	logging = False
 	updateurl = 'cpnits.com/butterfly.html'
@@ -58,7 +59,17 @@ class Mainroad:
 			alias='',
 			password='',
 			version=cls.version,
+			viewid=0,
+			logging=False,
 		)
+
+	@classmethod
+	def toggle_logging(cls):
+		cls.logging = not cls.logging
+		print('cls.logging', cls.logging)
+		props = cls.get_props()
+		props['logging'] = cls.logging
+		cls.set_props(props)
 
 	@classmethod
 	def test_settings_thing(cls, thing) -> bool:
@@ -101,6 +112,9 @@ class Mainroad:
 			cls.loglog(f"{empty}")
 			Pickles.write(settings_path, empty)
 			user_settings = Pickles.read(settings_path)
+			print('HIER???')
+
+		cls.force_access('onedrive', cls.get_onedrive_path())
 
 		# OneDrive path is ok, login via current user-settings must CHECK
 		if cls.check_login(user_settings['onedrive'], user_settings['password']) is None:
@@ -112,8 +126,15 @@ class Mainroad:
 			cls.force_reset()
 			cls.exit_message("Butterfly needs to reset [newer version]. Please try again.")
 
+		# set logging
+		if 'logging' in user_settings:
+			cls.logging = user_settings['logging']
+		else:
+			cls.logging = False
+		print('logging webstart', cls.logging)
+
 		# last: if update required
-		message = cls.get_message()
+		message = cls.get_message(newline=' ')
 		if message is None:
 			return True
 
@@ -128,13 +149,13 @@ class Mainroad:
 		# ready
 
 	@classmethod
-	def get_message(cls) -> str|None:
+	def get_message(cls, newline=' ') -> str|None:
 		path = os.path.join(cls.get_onedrive_path(), 'DO_NOT_DELETE.txt')
 		try:
+			lines = list()
 			with open(path, 'r') as f:
 				lines = f.readlines()
-				lines = lines[:-1]
-			return ' '.join(lines)
+			return newline.join(lines)
 		except:
 			return None
 
@@ -244,6 +265,14 @@ class Mainroad:
 		return settings_path
 
 	@classmethod
+	def get_desktop_path(cls) -> str:
+		try:
+			desktop = os.path.join(pathlib.Path.home(), 'Desktop')
+			return desktop
+		except Exception as e:
+			return ''
+
+	@classmethod
 	def get_onedrive_path(cls):
 		# only for use after first init.
 		settings_path = cls.get_settings_path()
@@ -288,6 +317,14 @@ class Mainroad:
 			return None
 
 	@classmethod
+	def get_prop(cls, name: str):
+		props = cls.get_props()
+		try:
+			return props[name]
+		except:
+			return None
+
+	@classmethod
 	def get_props(cls) -> dict | None:
 		propspad = cls.get_settings_path()
 		props = Pickles.read(propspad)
@@ -315,6 +352,7 @@ class Mainroad:
 
 	@classmethod
 	def loglog(cls, t: str):
+		cls.logging = cls.get_prop('logging')
 		if cls.logging:
 			desktop = os.path.normpath(os.path.expanduser("~/Desktop"))
 			pad = os.path.join(desktop, 'loglog.log')

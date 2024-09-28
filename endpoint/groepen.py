@@ -8,7 +8,8 @@ from endpoint.studenten import (
 	Student,
 	StudentJinja,
 	filter_stuff,
-	get_student_filter
+	get_student_filter,
+	is_active_in_group,
 )
 
 # =============== ENDPOINTS =====================
@@ -39,18 +40,87 @@ def studenten_groep(groepnr=0, viewid=0):
 
 	# groepen
 	groepen = list()
-	groep = None
+	dezegroep = None
 	for g in allegroepen:
+		if g['status'] != 1:
+			# active groups only
+			continue
 		if groepnr == 0:
 			if g['id'] in mijngroepen:
-				groepnr = g['id']
+				# redirect to first of my groups
+				return redirect(f'/groepen/{g["id"]}')
 		if g['id'] == groepnr:
-			groep = g
+			dezegroep = g
 		groepen.append(g)
+
+	# views
+	# get / set current viewid in usersettings
+	# view other group, same setting.
+	allfieldnames = list(Student.get_empty().keys())
+	groupviews = views_o.get_views_by_groupid(groepnr) # views_o.get()
+	selectprimary = False
+	if viewid == 0:
+		viewid = jus.get_prop('viewid', default=0)
+		if viewid == 0:
+			# geen viewid in jus
+			selectprimary = True
+
+		elif views_o.is_group_in_view(groepnr, viewid):
+			# viewid from prev group is OK
+			return redirect(f'/groepen/{groepnr}/{viewid}')
+
+		else:
+			# find similar named view
+			viewid = views_o.get_by_similar_viewname(groepnr, viewid)
+			if viewid == 0:
+				selectprimary = True
+			else:
+				# found so redir
+				return redirect(f'/groepen/{groepnr}/{viewid}')
+
+	# check if groep in view
+	if not views_o.is_group_in_view(groepnr, viewid):
+		# view is niet bij deze groep
+		selectprimary = True
+
+	# if not preselected viewid, redirect to first active or all
+	if selectprimary:
+		for k, v in groupviews.items():
+			if v['status'] == 1:
+				return redirect(f'/groepen/{groepnr}/{k}')
+		return redirect(f'/groepen/{groepnr}/1')
+
+	# set current viewid
+	if viewid > 1:
+		jus.set_prop('viewid', viewid)
+
+	# get the view, has been checked for exist OR is 1
+	view = views_o.get_single_by_key(viewid)
+	if view is None:
+		# make view empty with all fields
+		view = views_o.empty_view()
+		view['fields'] = allfieldnames
+	else:
+		# chosen view
+		view['fields'].append('id')
+
+	# jinjafy
+	for key in list(groupviews.keys()):
+		# del default view, not to be shown or used
+		if key == views_o.get_defaultkey():
+			del (groupviews[key])
+			continue
+		groupviews[key] = JINJAstuff(groupviews[key], {})
+
+	view['fields'].append('id')
+	# append nice names to view
+	view['nicenames'] = dict()
+	for f in view['fields']:
+		view['nicenames'][f] = Student.get_nicename(f)
 
 	# studenten
 	students = list()
-	if groep is None:
+	if dezegroep is None:
 		pass
 	else:
 		students_o = Students()
@@ -58,6 +128,9 @@ def studenten_groep(groepnr=0, viewid=0):
 		for s in all:
 			# filter on this group
 			if not s['s_group'] == groepnr:
+				continue
+			# alleen als registratie, student of grading
+			if not is_active_in_group(s, sta):
 				continue
 			s['filter'] = get_student_filter(s, sta)
 			s['todo'] = 0
@@ -68,44 +141,6 @@ def studenten_groep(groepnr=0, viewid=0):
 			students.append(StudentJinja(s, Student.get_model()))
 		del (all)
 
-	allfieldnames = list(Student.get_empty().keys())
-
-	# alle views bij deze groep
-	view = views_o.get_single_by_key(viewid)
-	allviews = views_o.get()
-	selectprimary = viewid == 0
-	for key in list(allviews.keys()):
-		if key == views_o.get_defaultkey():
-			del(allviews[key])
-			continue
-
-		if not groepnr in allviews[key]['groups']:
-			del(allviews[key])
-			continue
-
-		if allviews[key]['status'] == 2 and selectprimary:
-			viewid = key
-			view = allviews[key]
-			selectprimary = False
-
-		if viewid == 0:
-			viewid = key
-			view = allviews[key]
-
-		allviews[key] = JINJAstuff(allviews[key], {})
-
-	if view is None:
-		# make view empty with all fields
-		view = views_o.empty_view()
-		view['fields'] = allfieldnames
-	else:
-		# chosen view
-		view['fields'].append('id')
-	# append nice names to view
-	view['nicenames'] = dict()
-	for f in view['fields']:
-		view['nicenames'][f] = Student.get_nicename(f)
-
 	circular = sysls_o.get_sysl('s_circular')
 
 	return render_template(
@@ -114,13 +149,13 @@ def studenten_groep(groepnr=0, viewid=0):
 		props=jus,
 		students=students,
 		groepen=groepen,
-		groep=groep,
+		groep=dezegroep,
 		filter=filter,
 		filters=fil,
 		tellers=tel,
 		actiefstats=act,
 		sysls=sysls_o.get(),
-		allviews=allviews,
+		allviews=groupviews,
 		view=view,
 		mijngroepen=mijngroepen,
 		viewid=viewid,

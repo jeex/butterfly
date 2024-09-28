@@ -64,7 +64,8 @@ td{
     border-radius: 3px;
     width: 220px;
 }
-input[type=submit]{
+input[type=submit],
+input[type=button]{
     border: 1px solid #ddd;
     background-color: #eee;
     padding: 0.25em 0.5em;

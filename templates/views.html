@@ -3,7 +3,7 @@
 {% set viewname = single._try('name') %}
 {% set viewkey = single._try('created_ts') %}
 {% set minfields = ['id', 'firstname', 'lastname'] %}
-{% set canedit = (props.magda(['docent'], alias=single._try('alias'))) and viewname != 'default' %}
+{% set canedit = props.magda(['docent'], alias=single._try('alias')) and viewname != 'default' and single._try('alias') == props.alias() %}
 </head>
 <body>
     {% include '_menu.html' %}
@@ -12,50 +12,46 @@
         <div class="two-columns">
             <div>
                 <div class="single-form">
-                <h2 style="margin-bottom: 1em;">Views</h2>
-                <div>
-                    <label>
-                        <a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/{{ default._try('created_ts') }}/copy">copy</a>
-                        <a style="{{ 'color: #888;' if default._try('status') < 1 }}" class="asbutton" href="/views/{{ default._try('created_ts') }}">default</a>
-                    </label>
-                    <div class="view-info" style="border: 1px solid {{ default._try('color') }};">
-                        <!-- leeg voor default -->
-                    </div>
-                </div>
-                <p style="border-bottom: 1px solid var(--menu); margin:0;"></p>
-                {% for status in [2, 1, 0] %}
-                    {% for a, aa in all.items() %}
-                        {% if a in mijnviews and aa._try('status', default=0) == status %}
-                            <div>
-                                <label>
-                                    <a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/{{ a }}/copy">copy</a>
-                                    <a style="{{ 'color: #888;' if aa._try('status') < 1 }}" class="asbutton" href="/views/{{ a }}">{{ aa._try('name') }}</a>
-                                </label>
-                                <div class="view-info" style="border: 1px solid {{ aa._try('color') }};">
-                                    {{ aa._try('alias') }}
-                                    {{ aa._try('created_ts')|date }}
-                                </div>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                {% endfor %}
-                <p style="border-bottom: 1px solid var(--menu); margin:0;"></p>
-                {% for a, aa in all.items() %}
-                    {% if a != 'default' and a not in mijnviews %}
-                        <div>
-                            <label>
-                                <a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/{{ a }}/copy">copy</a>
-                                <a style="{{ 'color: #888;' if aa._try('status') < 1 }}" class="asbutton" href="/views/{{ a }}">{{ aa._try('name') }}</a>
-                            </label>
-                            <div class="view-info" style="border: 1px solid {{ aa._try('color') }};">
-                                {{ aa._try('alias') }}
-                                {{ aa._try('created_ts')|date }}
-                            </div>
-                        </div>
-                    {% endif %}
-                {% endfor %}
+                    <h2 style="margin-bottom: 1em;">Views Sortable</h2>
+                    <table class="view-links">
+                        <tbody>
+                            <tr>
+                                <td style="background-color: #ddd;"><a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/{{ default._try('created_ts') }}/copy">copy</a></td>
+                                <td style="background-color: #ddd;"><a style="{{ 'color: #888;' if default._try('status') < 1 }}" class="asbutton" href="/views/{{ default._try('created_ts') }}">default</a></td>
+                                <td style="background-color: #ddd;">&nbsp;</td>
+                            </tr>
+                        </tbody>
+                        <tbody class="sort sorted-views">
+                            <form name="form-sorted-views" method="post" action="/views/sort-views">
+                                <input type="text" name="viewids" value="">
+                            </form>
+                            {% for status in [2, 1, 0] %}
+                                {% for a, aa in all.items() %}
+                                    {% if a in mijnviews and aa._try('status', default=0) == status %}
+                                        <tr id="view-{{ a }}">
+                                            <td><a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/{{ a }}/copy">copy</a></td>
+                                            <td><a style="{{ 'color: #888;' if aa._try('status') < 1 }}" class="asbutton" href="/views/{{ a }}">{{ aa._try('name') }}</a></td>
+                                            <td>{{ aa._try('alias') }} {{ aa._try('created_ts')|date }}</td>
+                                        </tr>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+                        </tbody>
+                        <tbody>
+                            {% for a, aa in all.items() %}
+                                {% if a != 'default' and a not in mijnviews %}
+                                    <tr>
+                                        <td style="background-color: #ddd;"><a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/{{ a }}/copy">copy</a></td>
+                                        <td style="background-color: #ddd;"><a style="{{ 'color: #888;' if aa._try('status') < 1 }}" class="asbutton" href="/views/{{ a }}">{{ aa._try('name') }}</a></td>
+                                        <td style="background-color: #ddd;">{{ aa._try('alias') }} {{ aa._try('created_ts')|date }}</td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
+
             <!-- rechterkolom -->
             <div class="two-columns">
                 {% if not kopie %}
@@ -82,7 +78,7 @@
                                     </tr>
                                     {% endfor %}
                                 </thead>
-                                <tbody class="sort">
+                                <tbody class="sort sorted-fields">
                                     {% for field in single._try('fields') %}
                                     {% if not field in minfields %}
                                         <tr>
@@ -144,10 +140,7 @@
                                 <input type="text"  pattern=".{3,}" name="changename" value="{{ single._try('name') }}">
                                 <input style="height: 1.5em;" type="color" name="color" value="{{ single._try('color') }}">
                                 <span style="background-color: #eee; border: 1px solid #ddd; border-radius: 3px; padding: 0.25em 0.5em; margin: 0 0.5em 0.25em 0;">
-                                    <input {{ 'checked' if single._try('status') == 2 }} type="radio" name="status" value="2"> Primary
-                                </span>
-                                <span style="background-color: #eee; border: 1px solid #ddd; border-radius: 3px; padding: 0.25em 0.5em; margin: 0 0.5em 0.25em 0;">
-                                    <input {{ 'checked' if single._try('status') == 1 }} type="radio" name="status" value="1"> Active
+                                    <input {{ 'checked' if single._try('status') >= 1 }} type="radio" name="status" value="1"> Active
                                 </span>
                                 <span style="background-color: #eee; border: 1px solid #ddd; border-radius: 3px; padding: 0.25em 0.5em; margin: 0 0.5em 0.25em 0;">
                                     <input {{ 'checked' if single._try('status') < 1 }} type="radio" name="status" value="0"> Passive
@@ -236,11 +229,21 @@
         return lijst
     }
 
-    let order_and_send = function() {
+    let order_and_send_fields = function() {
         let lijst = make_veldnamen(true);
         $('input[name="fieldname"]').val('');
         $('input[name="fieldnamelist"]').val(lijst);
         $('form[name="deletefield"]').submit();
+    }
+
+    let order_and_send_views = function() {
+        var rijen = [];
+        $.each($('.sorted-views tr'), function(){
+            let id = $(this).attr('id').replace('view-', '') * 1;
+            rijen.push(id)
+        });
+        $('input[name="viewids"]').val(rijen)
+        $('form[name="form-sorted-views"]').submit()
     }
 
     let name_safe = function(erin, maxlen){
@@ -298,7 +301,11 @@
         axis: 'y',
         update: function(e, ui) {
             $(this).sortable('refresh');
-            order_and_send();
+            if($(this).hasClass('sorted-fields')){
+                order_and_send_fields();
+            }else if($(this).hasClass('sorted-views')){
+                order_and_send_views();
+            }
         }
     });
 

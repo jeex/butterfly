@@ -40,7 +40,12 @@
         </ul>
         {% if menuitem in ['home', 'studenten', 'groepen'] %}
             <form name="menu-zoek" style="margin-left: 0.25em;" action="/studenten/zoek" method="get">
-                <input style="height: 2.1em; padding: 0 0.5em;" type="text" name="s" value="" placeholder="Search by name" list="searchterms">
+                {% if comesfrom and comesfrom is not none %}
+                    <input type="hidden" name="comes-from" value="{{ comesfrom }}">
+                {% else %}
+                    <input type="hidden" name="comes-from" value="{{ url_for(request.endpoint, **request.view_args) }}">
+                {% endif %}
+                <input style="height: 2.1em; padding: 0 0.5em;" type="text" name="s" value="{{ zoekterm if zoekterm is not none }}" placeholder="Search by name" list="searchterms">
                     <datalist id="searchterms">
                         {% for ss in props.get_searchterms() %}
                             <option value="{{ ss }}">{{ ss }}</option>
@@ -51,14 +56,20 @@
         {% endif %}
         <script>
         $(function(){
-            $('form[name="menu-zoek"]').on('submit', function(e) {
-                let zoekvak = $(this).find('input[name="s"]');
-                if (zoekvak.val().trim() === ''){
-                    e.preventDefault();
-                    zoekvak.val('');
-                    zoekvak.css('background-color', 'var(--signaal)').css('color', 'white');
-                }
-            })
+            $('form[name="menu-zoek"]')
+                .on('keyup', function(e){
+                    if (e.keyCode === 13) {
+                        this.submit();
+                    }
+                })
+                .on('submit', function(e) {
+                    let zoekvak = $(this).find('input[name="s"]');
+                    if (zoekvak.val().trim() === ''){
+                        e.preventDefault();
+                        zoekvak.val('');
+                        zoekvak.css('background-color', 'var(--signaal)').css('color', 'white');
+                    }
+                })
         });
         </script>
     </menu>

@@ -56,6 +56,12 @@ def kiezen(sysl='s_group', id=0):
 	else:
 		allitems = dict() # alle items van deze sysl
 	fields = sysls_o.get_fields()
+
+	# selected sysl
+	thysl = sysls_o.get_sysl_item(sysl, id)
+	if not thysl is None:
+		thysl = jinja_object(thysl)
+
 	return render_template(
 		'beheer.html',
 		menuitem=menuitem,
@@ -65,6 +71,7 @@ def kiezen(sysl='s_group', id=0):
 		fields=fields,
 		allitems=allitems,
 		id=id,
+		thysl=thysl,
 	)
 
 @ep_beheer.post('/<path:sysl>')
@@ -82,8 +89,8 @@ def ep_beheer_post(sysl, id=0):
 	d['id'] = Casting.int_(d['id'], default=0)
 	d['status'] = Casting.int_(d['status'], default=0)
 	d['ordering'] = Casting.int_(d['ordering'], default=0)
-	if d['id'] == 0:
-		return redirect(f'/beheer/{sysl}')
+	# if d['id'] == 0:
+	#	return redirect(f'/beheer/{sysl}')
 
 	sysls_o = Sysls()
 	current = sysls_o.get_sysl_item(sysl, d['id'])

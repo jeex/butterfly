@@ -7,21 +7,34 @@
     </header>
     <main class="home">
         <h1>Welcome at CPNITS Butterfly, {{ props.alias() }}</h1>
-        <p>The path to your OneDrive is: <strong>{{ props.odpad() }}</strong></p>
-        <p>The path to your Settings is: <strong>{{ props.settingspad() }}</strong></p>
-        <!-- <a class="asbutton" href="#">werkt nog niet</a> -->
         {% if bericht is not none %}
-            <div style="margin: 1em; border: 2px solid var(--signaal);padding: 1em;">{{ bericht }}</div>
+            <div style="margin: 1em; border: 2px solid var(--signaal);padding: 1em;">{{ bericht|safe }}</div>
         {% endif %}
         {% if props.magda(['docent']) %}
             <div style="display: flex; flex-direction: row; justify-content: space-between;">
-                <div style="width: {{ '49%'|safe if huntodos|length > 0 else '100%'|safe }};">
-                    <h2>Todo's for students</h2>
+                <div style="width: 100%">
+                    <h2>My todo's</h2>
                     {% for key, groep in groepen.items() %}
-                        {% if key in pergroep.keys() %}
+                        {% if key in mijn.keys() %}
                             <h3 class="contrast" style="background-color: {{ groep['color'] }}">{{ groep['name'] }}</h3>
                             <ul>
-                            {% for t in pergroep[key] %}
+                            {% for t in mijn[key] %}
+                                <li class="liggend"><a class="asbutton valop" href="/studenten/single/{{ t._id() }}">{{ t._id()|vier }}</a> {{ t._try('firstname') }} {{ t._try('lastname') }}</li>
+                            {% endfor %}
+                            </ul>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            <div style="display: flex; flex-direction: row; justify-content: space-between;">
+
+                <div style="width: 100%">
+                    <h2>Other todo's</h2>
+                    {% for key, groep in groepen.items() %}
+                        {% if key in dijn.keys() %}
+                            <h3 class="contrast" style="background-color: {{ groep['color'] }}">{{ groep['name'] }}</h3>
+                            <ul>
+                            {% for t in dijn[key] %}
                                 <li class="liggend"><a class="asbutton valop" href="/studenten/single/{{ t._id() }}">{{ t._id()|vier }}</a> {{ t._try('firstname') }} {{ t._try('lastname') }}</li>
                             {% endfor %}
                             </ul>
@@ -30,6 +43,12 @@
                 </div>
             </div>
         {% endif %}
+        <hr>
+        <p>The path to your OneDrive is: <strong>{{ props.odpad() }}</strong></p>
+        <p>The path to your Settings is: <strong>{{ props.settingspad() }}</strong></p>
+        <p>Logging is {{ 'on' if logging else 'off' }}</p>
+        <!-- <a class="asbutton" href="#">werkt nog niet</a> -->
+
     </main>
 <script>
     $(function(){

@@ -52,6 +52,7 @@ let sortClick = function(deze){
         }
 }
 
+/*
 let rowClick = function(deze){
     let rij = $(deze);
     // velden in form invullen. Volgorde is zelfde in form als in row
@@ -77,7 +78,7 @@ let rowClick = function(deze){
         scrollTop: 0
     }, 100);
 }
-
+*/
 let wireReorderList = function(){
     $("#reorderExampleItems").sortable();
     $("#reorderExampleItems").disableSelection();
@@ -99,10 +100,11 @@ $(function(){
         sortClick(this);
     });
 
-    // click on tbody td
+    /*  // click on tbody td
     $('table tbody tr').on('click', function(){
        rowClick(this)
     });
+    */
 
     // save form
     $('form[name="edit"]').on('submit', function(e){

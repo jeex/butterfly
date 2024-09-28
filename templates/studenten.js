@@ -129,9 +129,12 @@ let tabel2csv = function(header) {
     });
     if(nietnul){
         $('#csv-area').val(csvtext);
+        return true;
+    }else{
+        return false;
     }
 }
-
+/* off because handled by a request.
 let download_excel = function(){
     let csvtext = $('#csv-area').val().trim();
     if(csvtext === ''){
@@ -143,7 +146,7 @@ let download_excel = function(){
     link.setAttribute("download","report.csv");
     link.click();
 }
-
+*/
 let click_to_group = function(){
     // maakt groep-vak rechtsklik-baar als student actief.
     let acts = {{ actiefstats|safe }}
@@ -342,9 +345,12 @@ $(function(){
     });
 
     $('input[name="to-excel"]').on('click', function(e) {
-        e.preventDefault();
-        tabel2csv(header=true);
-        download_excel();
+        if( tabel2csv(header=true) ){
+            // submit form
+        }else{
+            e.preventDefault();
+        }
+        // download_excel();
     });
 
     // sort at start
