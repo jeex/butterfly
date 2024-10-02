@@ -342,6 +342,8 @@ class Views(metaclass=ViewsMeta):
 			viewname = viewname.replace('-', ' ').replace('_', ' ')
 			return viewname.split(' ')[0].strip()
 
+		if not viewid in self._sysmem:
+			return 0
 		simname = firstpart(self._sysmem[viewid]['name'])
 		for k, v in self._sysmem.items():
 			if not groupid in self._sysmem[k]['groups']:
