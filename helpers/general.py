@@ -112,7 +112,6 @@ class Mainroad:
 			cls.loglog(f"{empty}")
 			Pickles.write(settings_path, empty)
 			user_settings = Pickles.read(settings_path)
-			print('HIER???')
 
 		cls.force_access('onedrive', cls.get_onedrive_path())
 
@@ -141,10 +140,7 @@ class Mainroad:
 		if cls.updateurl in message:
 			# open browser to new version
 			webbrowser.open(f"https://{cls.updateurl}", new=0, autoraise=True)
-		if '!' in message:
-			# update required
-			cls.force_reset()
-			cls.exit_message(message)
+
 		return True
 		# ready
 
