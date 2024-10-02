@@ -23,7 +23,7 @@
                         </tbody>
                         <tbody class="sort sorted-views">
                             <form name="form-sorted-views" method="post" action="/views/sort-views">
-                                <input type="text" name="viewids" value="">
+                                <input type="hidden" name="viewids" value="">
                             </form>
                             {% for status in [2, 1, 0] %}
                                 {% for a, aa in all.items() %}
@@ -212,7 +212,7 @@
 
     let make_veldnamen = function(asstring=true){
         if(asstring) {
-            var lijst = 'id,firstname,lastname,'
+            var lijst = 'id,assessment,firstname,lastname,'
             var komma = ''
         }else{
             var lijst = [];
@@ -231,6 +231,7 @@
 
     let order_and_send_fields = function() {
         let lijst = make_veldnamen(true);
+        alert(lijst)
         $('input[name="fieldname"]').val('');
         $('input[name="fieldnamelist"]').val(lijst);
         $('form[name="deletefield"]').submit();

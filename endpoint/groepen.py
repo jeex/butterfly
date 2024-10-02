@@ -35,6 +35,7 @@ def studenten_groep(groepnr=0, viewid=0):
 	sysls_o = Sysls()
 	views_o = Views()
 	mijngroepen = views_o.mijn_groepen()
+
 	all = sysls_o.get_sysl('s_group')
 	allegroepen = ListDicts.sortlistofdicts(list(all.values()), 'ordering')
 
@@ -59,50 +60,48 @@ def studenten_groep(groepnr=0, viewid=0):
 	allfieldnames = list(Student.get_empty().keys())
 	groupviews = views_o.get_views_by_groupid(groepnr) # views_o.get()
 	selectprimary = False
+
+	# get view if current or previous
+	previous_viewid = 0
 	if viewid == 0:
-		viewid = jus.get_prop('viewid', default=0)
-		if viewid == 0:
-			# geen viewid in jus
-			selectprimary = True
+		viewid = previous_viewid = jus.get_prop('viewid', default=0)
+		view = views_o.get_single_by_key(viewid)
+	else:
+		view = views_o.get_single_by_key(viewid)
 
-		elif views_o.is_group_in_view(groepnr, viewid):
-			# viewid from prev group is OK
-			return redirect(f'/groepen/{groepnr}/{viewid}')
+	# check if groep in view, gives False if viewid == 0
+	if not views_o.is_group_in_view(groepnr, viewid):
+		selectprimary = True
+		viewid = 0
+		view = None
 
-		else:
-			# find similar named view
-			viewid = views_o.get_by_similar_viewname(groepnr, viewid)
-			if viewid == 0:
-				selectprimary = True
-			else:
-				# found so redir
+	# if not preselected viewid yet
+	if selectprimary:
+		# first look for similar view
+		if previous_viewid != 0:
+			viewid = views_o.get_by_similar_viewname(groepnr, previous_viewid)
+			if viewid > 0:
+				# if found, redirect
 				return redirect(f'/groepen/{groepnr}/{viewid}')
 
-	# check if groep in view
-	if not views_o.is_group_in_view(groepnr, viewid):
-		# view is niet bij deze groep
-		selectprimary = True
-
-	# if not preselected viewid, redirect to first active or all
+	# if not preselected viewid,
 	if selectprimary:
+		# redirect to first active or all
 		for k, v in groupviews.items():
 			if v['status'] == 1:
 				return redirect(f'/groepen/{groepnr}/{k}')
 		return redirect(f'/groepen/{groepnr}/1')
 
-	# set current viewid
+	# set current viewid if not ALL
 	if viewid > 1:
 		jus.set_prop('viewid', viewid)
 
-	# get the view, has been checked for exist OR is 1
-	view = views_o.get_single_by_key(viewid)
+	# get the view, if 1
 	if view is None:
 		# make view empty with all fields
 		view = views_o.empty_view()
 		view['fields'] = allfieldnames
-	else:
-		# chosen view
-		view['fields'].append('id')
+	view['fields'].append('id')
 
 	# jinjafy
 	for key in list(groupviews.keys()):
@@ -112,7 +111,6 @@ def studenten_groep(groepnr=0, viewid=0):
 			continue
 		groupviews[key] = JINJAstuff(groupviews[key], {})
 
-	view['fields'].append('id')
 	# append nice names to view
 	view['nicenames'] = dict()
 	for f in view['fields']:

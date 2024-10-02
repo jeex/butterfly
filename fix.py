@@ -8,10 +8,11 @@ for l in lijst:
 	if not l.endswith(".pickle"):
 		continue
 	d = Pickles.read(os.path.join(pad, l))
-	'''if d['name'] == 'default':
+	if d['name'] == 'default':
 		d['fields'] = ['id', 'assessment', 'firstname', 'lastname']
 	else:
-		d['fields'].insert(1, 'assessment')'''
+		if not 'assessment' in d['fields']:
+			d['fields'].insert(1, 'assessment')
 	ppp(d)
 	# Pickles.write(os.path.join(pad, l), d)
 

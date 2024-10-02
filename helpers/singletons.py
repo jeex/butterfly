@@ -347,7 +347,6 @@ class Views(metaclass=ViewsMeta):
 			if not groupid in self._sysmem[k]['groups']:
 				continue
 			fp = firstpart(v['name'])
-			print('\t', fp, v['name'], k)
 			if simname == fp:
 				return k
 		return 0

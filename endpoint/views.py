@@ -122,6 +122,7 @@ def views_post(viewid):
 def view_post(viewid):
 	views_o = Views()
 	single = views_o.get_single_by_key(viewid)
+
 	if single is None:
 		return redirect('/views/default')
 
