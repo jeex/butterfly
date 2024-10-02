@@ -31,6 +31,7 @@ class Student(BaseClass):
 			password = {'default': ''},
 			grade = {'default': 0},
 			grade_ts = {'default': 0},
+			assessment = {'default': 0},
 
 			s_group = {'default': 0, 'from': 's_group'},
 			s_status = {'default': 0, 'from': 's_status'},
@@ -77,6 +78,7 @@ class Student(BaseClass):
 			created_ts='created',
 			grade_ts='dd',
 			s_gender='mfo',
+			assessment='ass',
 		)
 		if key in nicenames:
 			return nicenames[key]
@@ -178,6 +180,16 @@ class  StudentJinja(JINJAstuff):
 		ss = self._try('samestudent', default=[])
 		sss = ', '.join(map(str, ss))
 		return sss
+
+	def _ass(self) -> str:
+		# gives color for assessment
+		s = self._try('assessment', default=0)
+		if s == 1:
+			return 'rgb(0, 144, 81)'
+		elif s == 2:
+			return 'rgb(210, 26, 91)'
+		else:
+			return '#ddd'
 
 
 # =============== ENDPOINTS =====================
@@ -927,6 +939,9 @@ def crunch_student(s, req):
 			newstudent[key] = Casting.int_(req[key], 0)
 		else:
 			newstudent[key] = req[key]
+
+	if not 'assessment' in req:
+		newstudent['assessment'] = 0
 
 	if 'grade' in newstudent:
 		if 'grade' in s:

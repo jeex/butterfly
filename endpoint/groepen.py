@@ -230,4 +230,24 @@ def studenten_groep_post(groepnr, viewid=0):
 
 
 
+@ep_groepen.post('/asshole')
+def asshole_post():
+	camefrom = request.referrer
+	try:
+		studid = Casting.int_(request.form['student-id'], default=None)
+		asshole = Casting.int_(request.form['asshole-field'], default=None)
+	except:
+		return redirect(camefrom)
 
+	if studid is None or asshole is None:
+		return redirect(camefrom)
+
+	students_o = Students()
+	student = students_o.get_by_id(studid)
+
+	if student is None:
+		return redirect(camefrom)
+
+	student['assessment'] = asshole
+	students_o.make_student_pickle(studid, student)
+	return redirect(camefrom)

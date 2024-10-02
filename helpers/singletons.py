@@ -288,7 +288,7 @@ class Views(metaclass=ViewsMeta):
 			alias=jus.alias(),
 			color='#ffffff',
 			status=1,
-			fields=['id', 'firstname', 'lastname'],
+			fields=['id', 'assessment', 'firstname', 'lastname'],
 			groups=[],
 		)
 

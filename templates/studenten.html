@@ -31,6 +31,7 @@
                     <th class="smal" id="pf_url"><span></span>pf</th>
                     <th id="s_status"><span></span>status</th>
 
+                    <th class="smal" id="assessment"><span></span>ass</th>
                     <th class="smal" id="grade"><span></span>grade</th>
                     <th id="grade_ts"><span></span>per</th>
 
@@ -69,7 +70,8 @@
                     {% set item = s._s_item('s_status') %}
                     <td data-csv="{{ item['name']|nbsp|safe }}" data-th="s_status" data-idnr="{{ item['id'] }}" style="background-color: {{ item['color'] }};">{{ item['name']|nbsp|safe }}</td>
 
-                    <td data-csv="" class="smal {{ s._try('grade')|gradecss }}" data-th="grade">{{ s._try('grade') }}</td>
+                    <td data-csv="{{ s._try('assessment', default=0) }}" class="smal " style="background-color: {{ s._ass() }}" data-th="grade">&nbsp;</td>
+                    <td data-csv="{{ s._try('grade') }}" class="smal {{ s._try('grade')|gradecss }}" data-th="grade">{{ s._try('grade') }}</td>
                     <td data-csv="{{ s._try('grade_ts')|date }}" data-th="grade_ts">{{ s._try('grade_ts')|date }}</td>
 
                     {% set item = s._s_item('s_year') %}

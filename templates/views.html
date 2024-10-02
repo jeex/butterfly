@@ -2,7 +2,7 @@
 <link rel="stylesheet" href="/static/views.css" />
 {% set viewname = single._try('name') %}
 {% set viewkey = single._try('created_ts') %}
-{% set minfields = ['id', 'firstname', 'lastname'] %}
+{% set minfields = ['id', 'assessment', 'firstname', 'lastname'] %}
 {% set canedit = props.magda(['docent'], alias=single._try('alias')) and viewname != 'default' and single._try('alias') == props.alias() %}
 </head>
 <body>

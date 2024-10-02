@@ -43,7 +43,12 @@
             <input form="no-ajax" name="what" value="" type="hidden">
         </form>
 
-        {% set smalfields = ['id', 's_gender', 'todo', 'pf_url', 'grade', 's_ec', 's_lang'] %}
+        <form id="asshole" style="display: none;" method="post" action="/groepen/asshole/">
+            <input form="asshole" name="student-id" value="" type="hidden">
+            <input form="asshole" name="asshole-field" value="" type="hidden">
+        </form>
+
+        {% set smalfields = ['id', 's_gender', 'todo', 'pf_url', 'grade', 's_ec', 's_lang', 'assessment'] %}
         <div class="links">
             <table class="rotate-headers">
                 <thead>
@@ -61,7 +66,7 @@
                                 <th style="background-color: {{ view['color'] }};" class="contrast smal custom no-sort" id="{{ f }}"><span></span>{{ f.replace('t_', '') }}</th>
 
                             {% else %}
-                                <th style="background-color: {{ view['color'] }};" class="contrast {{ 'smal' if f in smalfields }} {{ 'no-sort' if f not in afns or f in ['grade'] }}" id="{{ f }}"><span></span>{{ view['nicenames'][f] }}</th>
+                                <th style="background-color: {{ view['color'] }};" class="contrast {{ 'smal' if f in smalfields }} {{ 'no-sort' if f not in afns or f in ['grade', 'assessment'] }}" id="{{ f }}"><span></span>{{ view['nicenames'][f] }}</th>
                             {% endif %}
                         {% endfor %}
                     </tr>
@@ -93,6 +98,9 @@
                                 <td class="dblignore {{ s._try('grade')|gradecss }}" data-csv="{{ s._try('grade') }}" data-th="grade">
                                     <input type="number" step="10" min="0" max="100" name="grade" value="{{ s._try('grade') }}" style="width: 5em; font-size: 1em; padding: 0.1em;">
                                 </td>
+
+                            {% elif f == 'assessment' %}
+                                <td class="dblignore do-asshole" data-csv="{{ s._try('assessment', default=0) }}" style="background-color: {{ s._ass() }}"></td>
 
                             {% elif f in ['grade_ts', 'created_ts'] %}
                                 <td data-csv="{{ s._try(f)|date }}" data-th="{{ f }}">{{ s._try(f)|date }}</td>
@@ -237,6 +245,24 @@
         $('#no-ajax input[name="field-value"]').val(3);
         $('#no-ajax').submit();
     });
+
+    // toggle cumlaude, asshole or no assessment
+    $('td.do-asshole').on('click', function(){
+        let id = $(this).closest('tr').attr('id')*1;
+        let curval = $(this).attr('data-csv')*1;
+        if(curval == 0) {
+            // cumlaude
+            curval = 1;
+        }else if(curval == 1){
+            // asshole
+            curval = 2;
+        }else{
+            curval = 0;
+        }
+        $('#asshole input[name="student-id"]').val(id);
+        $('#asshole input[name="asshole-field"]').val(curval);
+        $('#asshole').submit();
+    })
 
 </script>
 </body>

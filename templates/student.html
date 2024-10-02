@@ -118,6 +118,14 @@
                         {% endif %}
                         {% if props.magda(['beheer', 'docent']) %}{% set readonly = '' %}{% else %}{% set readonly = 'disabled' %}{% endif %}
                         <p>
+                            <label style="background-color: {{ student._ass() }}" class="{{ student._try('assessment')|gradecss }}">Assessment</label>
+                            <span class="radiospan">
+                                <span class="radio"><input type="radio" name="assessment" value="0" {{ 'checked' if student._try('assessment', default=0) == 0 }}> no</span>
+                                <span class="radio"><input type="radio" name="assessment" value="1"{{ 'checked' if student._try('assessment', default=0) == 1 }}> cum l.</span>
+                                <span class="radio"><input type="radio" name="assessment" value="2"{{ 'checked' if student._try('assessment', default=0) == 2 }}> fraude</span>
+                            </span>
+                        </p>
+                        <p>
                             <label class="{{ student._try('grade')|gradecss }}">Grade</label>
                             <input {{ readonly }} name="grade" min="0" max="100" step="10" type="number" value="{{ student._try('grade') }}">
                         </p>

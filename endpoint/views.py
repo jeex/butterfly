@@ -52,7 +52,7 @@ def view(viewid=0, copie=None):
 	# fieldnames are standard db field names
 	fieldnames = list(Student.get_empty().keys())
 	# eruit are fieldnames that cannot be used in a view, or that are always included
-	eruit = ['id', 'firstname', 'lastname', 's_gender', 'grade_ts', 'kom_code', 'notes', 'circulars', 'customs']
+	eruit = ['id', 'firstname', 'lastname', 'assessment', 's_gender', 'grade_ts', 'kom_code', 'notes', 'circulars', 'customs']
 
 	fields = dict()
 	for s in fieldnames:
