@@ -7,17 +7,17 @@
             <ul>
                 {% for thing in groepen %}
                     {% if thing['status'] == 1 and thing['id'] in mijngroepen %}
-                        <li class="contrast" style="border: 1px solid white; background-color: {{ thing['color'] }}"><a href="/groepen/{{ thing['id'] }}">{{ thing['name'] }}</a></li>
+                        <li class="contrast" style="border: 1px solid white; background-color: {{ thing['color'] }}"><a class="must-sort" href="/groepen/{{ thing['id'] }}">{{ thing['name'] }}</a></li>
                     {% endif %}
                 {% endfor %}
 
                 {% if mijngroepen|length > 0 and mijngroepen|length < groepen|length %}
-                    <li style="width: 2px; height: 2.5em; padding: 0; background-color: black; margin-right: 0.1em;"></li>
+                    <li class="" style="width: 2px; height: 2.5em; padding: 0; background-color: black; margin-right: 0.1em;"></li>
                 {% endif %}
 
                 {% for thing in groepen %}
                     {% if thing['id'] not in mijngroepen %}
-                        <li class="contrast" style="border: 1px solid white; background-color: {{ thing['color'] }}"><a href="/groepen/{{ thing['id'] }}">{{ thing['name'] }}</a></li>
+                        <li class="contrast" style="border: 1px solid white; background-color: {{ thing['color'] }}"><a class="must-sort" href="/groepen/{{ thing['id'] }}">{{ thing['name'] }}</a></li>
                     {% endif %}
                 {% endfor %}
             </ul>
@@ -29,7 +29,7 @@
             {% for status in [2, 1, 0] %}
                 {% for key, item in allviews.items() %}
                     {% if item._try('status', default=0) == status %}
-                        <a href="/groepen/{{ groep['id'] }}/{{ key }}" class="asbutton contrast" style="background-color: {{ item._try('color') }}">{{ item._try('name') }}</a>
+                        <a href="/groepen/{{ groep['id'] }}/{{ key }}" class="asbutton contrast must-sort" style="background-color: {{ item._try('color') }}">{{ item._try('name') }}</a>
                     {% endif %}
                 {% endfor %}
             {% endfor %}
@@ -41,11 +41,15 @@
             <input form="no-ajax" name="field-name" value="" type="hidden">
             <input form="no-ajax" name="field-value" value="" type="hidden">
             <input form="no-ajax" name="what" value="" type="hidden">
+            <input form="no-ajax" type="hidden" name="sort-field" value="">
+            <input form="no-ajax" type="hidden" name="sort-dir" value="">
         </form>
 
         <form id="asshole" style="display: none;" method="post" action="/groepen/asshole/">
             <input form="asshole" name="student-id" value="" type="hidden">
             <input form="asshole" name="asshole-field" value="" type="hidden">
+            <input form="asshole" type="hidden" name="sort-field" value="">
+            <input form="asshole" type="hidden" name="sort-dir" value="">
         </form>
 
         {% set smalfields = ['id', 's_gender', 'todo', 'pf_url', 'grade', 's_ec', 's_lang', 'assessment'] %}
@@ -54,9 +58,9 @@
                 <thead>
                     <tr>
                         <th style="background-color: {{ view['color'] }};" class="contrast no-sort"><input type="checkbox" name="add" value="all"></th>
-                        <th style="background-color: {{ view['color'] }};" class="contrast"><span></span>id</th>
+                        <th id="id" style="background-color: {{ view['color'] }};" class="contrast"><span></span>id</th>
                         {% for f in view['fields'] %}
-                            {% if f in ['id', 'notes', 'circulars', 'customs', 'todo', 'kom_code', 'nhls_code', 'password'] %}
+                            {% if f in ['id', 'notes', 'circulars', 'customs', 'todo', 'kom_code', 'nhls_code'] %}
                                 <!-- pass -->
 
                             {% elif f.startswith('c_') %}
@@ -69,6 +73,11 @@
                                 <th style="background-color: {{ view['color'] }};" class="contrast {{ 'smal' if f in smalfields }} {{ 'no-sort' if f not in afns or f in ['grade', 'assessment'] }}" id="{{ f }}"><span></span>{{ view['nicenames'][f] }}</th>
                             {% endif %}
                         {% endfor %}
+
+                        <!-- add email buttons if any -->
+                        {% for emb in view['emailbuttons'] %}
+                            <th style="background-color: {{ view['color'] }};" class="contrast custom no-sort" id="emb-{{ emb }}"><span></span>{{ emb }}</th>
+                        {% endfor %}
                     </tr>
                 </thead>
                 <tbody>
@@ -78,7 +87,7 @@
                         <td style="background-color: {{ view['color'] }}; border-radius: 0;" ><input type="checkbox" name="add" value="{{ id }}"></td>
                         <td data-csv="{{ id }}" ><a class="asbutton {{ 'valop' if s._try('todo') == 1 }}" href="/studenten/single/{{ id }}">{{ id|vier }}</a></td>
                         {% for f in view['fields'] %}
-                            {% if f in ['id', 'notes', 'circulars', 'customs', 'todo', 'kom_code', 'nhls_code', 'password'] %}
+                            {% if f in ['id', 'notes', 'circulars', 'customs', 'todo', 'kom_code', 'nhls_code'] %}
 
                             {% elif f == 'samestudent' %}
                                 {% set same = s._try('samestudent', default=[]) %}
@@ -119,6 +128,12 @@
                                 <td class="{{ 'dblignore' if f == 'email' }}" data-csv="{{ s._try(f) }}" data-th="{{ f }}">{{ s._try(f) }}</td>
                             {% endif %}
                         {% endfor %}
+
+                        <!-- add email buttons if any -->
+                        {% for emb in view['emailbuttons'] %}
+                            <td class=""><a class="asbutton" href="/studenten/emailbutton/{{ emb }}/{{ id }}">{{ emb }}</a></td>
+                        {% endfor %}
+
                     </tr>
                 {% endfor %}
                 </tbody>
@@ -126,7 +141,7 @@
         </div>
 
         {% if students|length > 0 %}
-            <form class="links" style="display: block;" name="to-collectief" action="/studenten/collectief" method="post">
+            <form class="links" style="display: block; margin-top: 0.5em;" name="to-collectief" action="/studenten/collectief" method="post">
                 <input type="hidden" name="col-ids" value="">
                 <select name="to-group">
                     <option value="0">naar groep</option>
@@ -143,22 +158,54 @@
                 <input type="submit" name="save" value="Ga" >
             </form>
 
-            <form action="/studenten/to-excel" method="post">
+            <form class="links" action="/studenten/to-excel" method="post" style="margin-top: 0.5em;">
                 <div class="links" >
                     <input type="hidden" name="comes-from" value="{{ url_for(request.endpoint, **request.view_args) }}">
                     <input type="hidden" name="group-name" value="{{ groep['name'] }}">
-                    {% if 'email' in view['fields'] %}
-                        <input type="button" name="to-emails" value="Email-adressen" >
-                    {% endif %}
-                    <input type="button" name="to-csv" value=" As CSV " >
+                    <!-- <input type="button" name="to-csv" value=" As CSV " > -->
+                    <textarea name="csv-data" id="csv-area" style="width: 800px; display: none;" rows="10"></textarea>
                     <input type="checkbox" name="shuffle" value="1"> shuffle
                     <input style="background-color: var(--menu);" type="submit" name="to-excel" value="Download as Excel" >
                 </div>
-                <div class="links" >
-                    <textarea name="csv-data" id="csv-area" style="width: 800px;" rows="10"></textarea>
-                </div>
             </form>
         {% endif %}
+
+        <div style="border-top: 1px solid var(--menu); margin: 1em 0 2em 0; padding: 1em 0 2em 0; width: 805px;">
+            <h2 style="margin-left: 0;">Make a new note for this group</h2>
+            <form name="groupnotes" action="/groepen/group-new-note/{{ groep['id'] }}" method="post" >
+                <textarea name="new-note" id="" style="width: 800px;" rows="3"></textarea><br>
+                <input style="background-color: var(--menu);" type="submit" name="make-note" value="Make note for this group" >
+            </form>
+
+            {% if 'notes' in groep %}
+                {% if groep['notes']|length > 0 %}
+                    <div style="border-top: 1px solid var(--menu); margin-top: 1em; padding-top: 1em; width: 805px;">
+                        <h2 style="margin-left: 0;">Notes for this group</h2>
+                        {% for note in groep['notes'] %}
+                            <div class="note">
+                                <p>{{ note['note']|safe }}</p>
+                                <div class="">
+                                    <span>{{ note['alias'] }}</span>
+                                    <span>{{ note['created_ts']|datetime }}</span>
+                                    <form method="post" action="/groepen/group-note/{{ groep['id']|int }}/{{ note['created_ts']|int }}">
+                                        <input style="background-color: white;" type="submit" name="group-note-delete" value="delete note">
+                                        <!--
+                                        Todo <input
+                                                class="todo-checkbox"
+                                                {{ 'checked'|safe if note['done'] == 0 }}
+                                                data-id="{{ groep['id'] }}"
+                                                data-note="{{ note['created_ts'] }}"
+                                                type="checkbox" name="done"
+                                                value="1"
+                                        > -->
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
     </main>
 <script>
     {% include 'studenten.js' %}

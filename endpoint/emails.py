@@ -1,4 +1,3 @@
-
 from flask import redirect, request, Blueprint, render_template
 
 from helpers.general import IOstuff, JINJAstuff, BaseClass
@@ -15,6 +14,14 @@ class EmailBaseClass(BaseClass):
 			nl_subject={'default': ''},
 		)
 
+	@classmethod
+	def alle_emails(cls):
+		return ['confirm', 'grade', 'password', 'hunt']
+
+	@classmethod
+	def placeholders(cls):
+		return ['name', 'minor', 'period', 'year', 'ec', 'grade', 'password']
+
 class EmailJinja(JINJAstuff):
 	pass
 
@@ -27,8 +34,7 @@ ep_email = Blueprint(
 	static_url_path='static',
 )
 
-alle_emails = ['confirm', 'grade'] #, 'hunt']
-placeholders = ['name', 'minor', 'period', 'year', 'ec', 'grade', 'password']
+
 
 @ep_email.get('/<path:name>')
 @ep_email.get('/')
@@ -44,8 +50,8 @@ def single_confirm(name: str = 'confirm'):
 		'email-single.html',
 		menuitem='emails',
 		props=jus,
-		alle=alle_emails,
-		placeholders=placeholders,
+		alle=EmailBaseClass.alle_emails(),
+		placeholders=EmailBaseClass.placeholders(),
 		mail=EmailJinja(mail, EmailBaseClass.get_model()),
 	)
 

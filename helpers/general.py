@@ -45,7 +45,7 @@ class Pickles:
 
 class Mainroad:
 	forca = list()
-	version = '1.08'
+	version = '1.09'
 	devdev = False
 	logging = False
 	updateurl = 'cpnits.com/butterfly.html'

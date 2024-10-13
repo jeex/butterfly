@@ -158,7 +158,7 @@ class Sysls(metaclass=SyslsMeta):
 			return True
 		return False
 
-	def get_model(self) -> dict:
+	def get_model(self, welk: str="") -> dict:
 		model = dict(
 			id = {'default': 0},
 			name = {'default': ''},
@@ -167,6 +167,8 @@ class Sysls(metaclass=SyslsMeta):
 			status = {'default': 'actief'},
 			ordering = {'default': 0},
 		)
+		if welk in ['s_group',]:
+			model['notes'] = {'default': list()}
 		return model
 
 	def get_fields(self) -> list:
@@ -290,7 +292,15 @@ class Views(metaclass=ViewsMeta):
 			status=1,
 			fields=['id', 'assessment', 'firstname', 'lastname'],
 			groups=[],
+			emailbuttons=[],
 		)
+
+	def void_normalize(self, view):
+		empty = self.empty_view()
+		nview = deepcopy(view)
+		for key in empty:
+			if not key in view:
+				view[key] = empty[key]
 
 	def init(self):
 		self._viewspath = Mainroad.get_views_path()
@@ -360,9 +370,18 @@ class Views(metaclass=ViewsMeta):
 			return False
 		return groupid in self._sysmem[viewid]['groups']
 
-	def get_views_by_groupid(self, groupid: int) -> OrderedDict:
+	def is_view_active(self, viewid: int) -> bool:
+		if viewid == 1:
+			return True
+		if not viewid in self._sysmem:
+			return False
+		return self._sysmem[viewid]['status'] == 1
+
+	def get_views_by_groupid(self, groupid: int, activeonly=False) -> OrderedDict:
 		g_views = OrderedDict()
 		for key in self._sysmem:
+			if activeonly and not self.is_view_active(key):
+				continue
 			if self.is_group_in_view(groupid, key):
 				g_views[key] = deepcopy(self._sysmem[key])
 		return g_views
@@ -396,7 +415,7 @@ class Views(metaclass=ViewsMeta):
 		all = self._sysmem
 		mijngroepen = list()
 		for key, val in all.items():
-			if val['alias'] == jus.alias():
+			if val['alias'] == jus.alias() and val['status'] > 0:
 				for g in val['groups']:
 					if not g in mijngroepen:
 						mijngroepen.append(g)
@@ -498,7 +517,7 @@ class Students(metaclass=StudentsMeta):
 
 		# other fields
 
-	def make_student_pickle(self, id: int, d) -> bool:
+	def make_student_pickle(self, id: int, d: dict) -> bool:
 		self.cleanup_before_save(d)
 		try:
 			ppath = os.path.join(self._stud_p_path, f"{self.generate_safename(id)}.pickle")
@@ -561,8 +580,8 @@ class Students(metaclass=StudentsMeta):
 			pass
 
 	def new_password(self, id):
-		x = ''.join(random.choices(string.ascii_lowercase, k=6))
-		return f"{id}-{x}"
+		x = ''.join(random.choices(string.ascii_lowercase+string.digits+'', k=13))
+		return f"{id*13}-{x}"
 
 	def new_student_id(self):
 		newid = 0
@@ -893,6 +912,7 @@ class UserSettings(metaclass=UserSetingsMeta):
 	_alias = ''
 	_title = ''
 	_users = dict()
+	# ROLLEN 'beheer', 'docent', 'administratie', 'admin'
 
 	def __init__(self):
 		self.init_props()
@@ -991,148 +1011,3 @@ class UserSettings(metaclass=UserSetingsMeta):
 		current = current[:10]
 		self.set_prop('searchterms', current)
 		return current
-
-
-'''
-class HuntsMeta(type):
-	_instances = {}
-	def __call__(cls, *args, **kwargs):
-		if cls not in cls._instances:
-			instance = super().__call__(*args, **kwargs)
-			cls._instances[cls] = instance
-		return cls._instances[cls]
-
-class Hunts(metaclass=HuntsMeta):
-	_huntspath = ''
-	_defaultid = 1
-	_sysmem = dict()
-
-	def __init__(self):
-		self.init()
-
-	def init(self):
-		self._huntspath = os.path.join(Mainroad.get_onedrive_path(), '_DATABASE', 'hunts')
-		self._sysmem = dict()
-		if not os.path.isdir(self._huntspath):
-			os.mkdir(self._huntspath)
-		for fname in os.listdir(self._huntspath):
-			if fname.startswith('.'):
-				continue
-			if not fname.endswith('.pickle'):
-				continue
-			justname = fname.split('.')[0]
-			d = Pickles.read(os.path.join(self._huntspath, fname))
-			try:
-				self._sysmem[justname] = d
-			except:
-				continue
-		if not f"question_{self._defaultid}" in self._sysmem:
-			# nog geen standaard view 'min' in systeem:
-			d = self.empty_question()
-			pad = self.question_path(self._defaultid)
-			Pickles.write(pad, d)
-		if not f"hunt_{self._defaultid}" in self._sysmem:
-			# nog geen standaard view 'min' in systeem:
-			d = self.empty_hunt()
-			pad = self.hunt_path(self._defaultid)
-			Pickles.write(pad, d)
-
-	def question_path(self, id: int):
-		return os.path.join(self._huntspath, f"question_{id}.pickle")
-
-	def hunt_path(self, id: int):
-		return os.path.join(self._huntspath, f"hunt_{id}.pickle")
-
-	def make_question(self, d) -> bool:
-		id = Casting.int_(d['id'], default=1)
-		pad = self.question_path(id)
-		if Pickles.write(pad, d):
-			self.init()
-			return True
-		return False
-
-	def empty_answer(self):
-		return dict(
-			id=0,
-			answer='',
-			good=False,
-		)
-
-	def empty_question(self):
-		jus = UserSettings()
-		antwoorden = list()
-		for i in range(6):
-			a = self.empty_answer()
-			a['id'] = i
-			antwoorden.append(a)
-		return dict(
-			id=self._defaultid,
-			name='default',
-			html='<p></p>',
-			answers=antwoorden,
-			created_ts=Timetools.now_secs(),
-			color='#ffffff',
-			status=1,
-			alias=jus.alias(),
-		)
-
-	def get_questions(self):
-		# returns all hunt assignments
-		questions = dict()
-		for e in self._sysmem:
-			if not e.startswith('question_'):
-				continue
-			questions[e] = self._sysmem[e]
-		return questions
-
-	def get_single_question(self, id: int):
-		try:
-			return deepcopy(self._sysmem[f'question_{id}'])
-		except:
-			return None
-
-	def get_new_question_id(self) -> int:
-		newid = 0
-		for key, val in self.get_questions().items():
-			justid = val['id']
-			if justid > newid:
-				newid = justid
-		return newid + 1
-
-	def delete_question(self, id: int):
-		justname = f'question_{id}'
-		if justname in self._sysmem and id != self._defaultid:
-			del(self._sysmem[justname])
-			pad = self.question_path()
-			Pickles.delete(pad)
-			self.init()
-
-	def empty_hunt(self):
-		return dict(
-			id=self._defaultid,
-			type='scavenger', # or 'treasure'
-			name='default',
-			start_ts=0,
-			end_ts=0,
-			created_ts=Timetools.now_secs(),
-			questions=list(),
-			groups=list(),
-		)
-
-	def calc_hunt_status(self, id):
-		pass
-		
-		
-'''
-
-'''
-# views omzetten
-vo = Views()
-alle = vo.get()
-ppp(alle)
-
-for val in alle.values():
-	if val['name'] == 'default':
-		print('default', val['created_ts'])
-	vo.make_view(val)
-'''

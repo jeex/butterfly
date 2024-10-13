@@ -61,6 +61,8 @@ def kiezen(sysl='s_group', id=0):
 	thysl = sysls_o.get_sysl_item(sysl, id)
 	if not thysl is None:
 		thysl = jinja_object(thysl)
+	else:
+		thysl = jinja_object(sysls_o.get_empty())
 
 	return render_template(
 		'beheer.html',
@@ -102,14 +104,23 @@ def ep_beheer_post(sysl, id=0):
 
 	if current is None and request.form.get('action') == 'Save':
 		# new
-		sysls_o.set_sysl_item(sysl, d['id'], d)
+		new = sysls_o.get_empty()
+		for key in d:
+			new[key] = d[key]
+		sysls_o.set_sysl_item(sysl, new['id'], new)
 
 	elif request.form.get('action') == 'Delete':
 		sysls_o.del_sysl_item(sysl, d['id'])
 
 	elif request.form.get('action') == 'Save':
 		# update
+		if sysl == 's_group':
+			if not 'notes' in current:
+				d['notes'] = list()
+			else:
+				d['notes'] = current['notes']
 		sysls_o.set_sysl_item(sysl, d['id'], d)
+
 	else:
 		return redirect(f'/system')
 

@@ -4,6 +4,7 @@ from helpers.general import Casting, Timetools, JINJAstuff, BaseClass
 from endpoint.studenten import Student
 
 from helpers.singletons import UserSettings, Sysls, Views
+from endpoint.emails import EmailBaseClass
 
 # VIEWS WORDEN ALLEEN LOSGELATEN OP GROEPEN, NIET OP STUDENTEN!!!
 def jinja_object(ding):
@@ -70,8 +71,12 @@ def view(viewid=0, copie=None):
 			fields[s] = s
 
 	sysls_o = Sysls()
+
 	# these are the available groups
 	groepen = sysls_o.get_sysl('s_group')
+
+	# available email buttons:
+	emailbuttons = EmailBaseClass().alle_emails()
 
 	singleview = jinja_object(singleview)
 	defaultview = None
@@ -95,6 +100,7 @@ def view(viewid=0, copie=None):
 		fields=fields,
 		fixedfields=fieldnames,
 		groepen=groepen,
+		emailbuttons=emailbuttons,
 	)
 
 # for editing the view itself (topright in html)
@@ -226,3 +232,26 @@ def sort_views():
 	views_o = Views()
 	views_o.reorder_views(ids)
 	return redirect(f"/views")
+
+@ep_views.post('/emailbutton/<int:viewid>')
+def add_emailbutton(viewid):
+	views_o = Views()
+	view = views_o.get_single_by_key(viewid)
+	if view is None:
+		return redirect(f'/views/{views_o.get_defaultkey()}')
+
+	if 'add-emb' in request.form:
+		if not 'emailbuttons' in view:
+			view['emailbuttons'] = list()
+		view['emailbuttons'].append(request.form['add-emb'])
+
+	elif 'delete-emb' in request.form:
+		if not 'emailbuttons' in view:
+			view['emailbuttons'] = list()
+		try:
+			view['emailbuttons'].remove(request.form['delete-emb'])
+		except:
+			pass
+
+	views_o.make_view(view)
+	return redirect(f"/views/{viewid}")

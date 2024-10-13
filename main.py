@@ -241,8 +241,9 @@ app.register_blueprint(ep_website)
 
 # IMPORTANT login etc.
 if not app.config['initialized']:
+	webtest = False
 	Mainroad.devdev = False
-	Mainroad.version = '1.08'
+	Mainroad.version = '1.09'
 	Mainroad.before_webview_start()
 	Mainroad.loglog(f"\nSTART {Timetools.now_string()}\n")
 	app.config['initialized'] = True
@@ -256,7 +257,7 @@ if not Mainroad.devdev:
 		jus.set_prop('last_url', '')
 		return redirect('/home')
 
-if False and Mainroad.devdev:
+if webtest and Mainroad.devdev:
 	app.run(port=5000)
 else:
 	Window(app)

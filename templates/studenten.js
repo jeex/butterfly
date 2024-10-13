@@ -232,6 +232,17 @@ $(function(){
         }else{
             th.find('span').html('&uarr;');
         }
+        $('#no-ajax input[name="sort-field"]' ).val(th.attr('id'));
+        $('#no-ajax input[name="sort-dir"]' ).val(richting);
+        $('#asshole input[name="sort-field"]' ).val(th.attr('id'));
+        $('#asshole input[name="sort-dir"]' ).val(richting);
+        let all_aas = $('a.must-sort');
+        $.each(all_aas, function(k, v){
+            var href = $(this).attr('href');
+            href = href.split('?')[0];
+            href = href+'?sort-field='+th.attr('id')+'&sort-dir='+richting;
+            $(this).attr('href', href);
+        })
     });
 
     // checkboxes on and off
@@ -368,7 +379,19 @@ $(function(){
         $('table th:nth-of-type(4)').trigger('click')
     {% else %}
         // als for groups
-        $('table th:nth-of-type(3)').trigger('click')
+        const urlParams = new URLSearchParams(window.location.search);
+        const sortfield = urlParams.get('sort-field');
+        const sortdir = urlParams.get('sort-dir');
+        if(sortfield && sortdir){
+            if(sortdir === 'asc'){
+                $('table th#'+sortfield).trigger('click');
+            }else{
+                $('table th#'+sortfield).trigger('click');
+                $('table th#'+sortfield).trigger('click');
+            }
+        }else{
+            $('table th:nth-of-type(4)').trigger('click')
+        }
     {% endif %}
 
     $('#csv-area').css('width', $('table').width());

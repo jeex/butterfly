@@ -244,7 +244,7 @@
                         <p>
                             {% if props.magda(['beheer', 'administratie']) %}{% set readonly = '' %}{% else %}{% set readonly = 'disabled' %}{% endif %}
                             {% set sysl = sysls['s_year'] %}
-                            <label style="background-color: {{ item['color'] }}">Year</label>
+                            <label style="background-color: {{ item['color'] }}">School Year</label>
                             <select {{ readonly }} name="s_year">
                                 <option value="0"> </option>
                                 {% for s in sysl %}

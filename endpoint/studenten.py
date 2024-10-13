@@ -10,6 +10,7 @@ from flask import redirect, request, Blueprint, render_template
 
 from helpers.general import Casting, Timetools, IOstuff, ListDicts, JINJAstuff, BaseClass, Mainroad
 from helpers.singletons import UserSettings, Sysls, Students, Emails
+from endpoint.emails import EmailBaseClass
 
 DEFAULTSTUDENTEN = 'registratie'
 
@@ -711,6 +712,25 @@ def graded_mail(id):
 		student['s_status'] = 38
 	students_o.make_student_pickle(id, student)
 	return redirect(f'/studenten/single/{id}')
+
+@ep_studenten.get('/emailbutton/<path:emb>/<int:id>')
+def emailbutton(emb, id):
+	if not emb in EmailBaseClass.alle_emails():
+		return redirect(request.referrer)
+
+	students_o = Students()
+	stud = students_o.get_by_id(id)
+	if stud is None:
+		return redirect(request.referrer)
+
+	emailmessage = create_mail(stud, emb)
+	body = emailmessage['text']
+	body = body.replace('<br>', "\n")
+	urimail = f"mailto:{stud['email']}?subject={emailmessage['subject']}&body={body}";
+	webbrowser.open(urimail)
+
+	return redirect(request.referrer)
+
 
 @ep_studenten.post('/to-excel')
 def to_excel_post():

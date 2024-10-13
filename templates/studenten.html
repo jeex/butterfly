@@ -45,6 +45,7 @@
                     <th id="s_uni"><span></span>institute</th>
                     <th id="s_program"><span></span>program</th>
                     <th id="created_ts"><span></span>created</th>
+                    <th id="password"><span></span>password</th>
                     <th id="samestudent"><span></span>same</th>
                 </tr>
             </thead>
@@ -103,6 +104,8 @@
 
                     <td data-csv="{{ s._try('created_ts')|date }}" data-th="created_ts">{{ s._try('created_ts')|date }}</td>
 
+                    <td data-csv="{{ s._try('password') }}" data-th="password">{{ s._try('password') }}</td>
+
                     {% set same = s._try('samestudent', default=[]) %}
                     {% for ss in same %}
                         <td><a class="asbutton" href="/studenten/single/{{ ss }}">{{ ss }}</a></td>
@@ -135,13 +138,11 @@
         {% if props.magda(['administratie', 'beheer']) and students|length > 0 %}
             <form action="/studenten/to-excel" method="post">
                 <div class="links" >
+                    <textarea name="csv-data" id="csv-area" style="width: 800px; display: none;" rows="10"></textarea>
                     <input type="hidden" name="comes-from" value="{{ url_for(request.endpoint, **request.view_args) }}">
-                    <input type="button" name="to-emails" value="Email-adressen" >
-                    <input type="button" name="to-csv" value=" As CSV " >
-                    <input style="background-color: var(--menu);" type="submit" name="to-excel" value="Download as Excel" >
-                </div>
-                <div class="links" >
-                    <textarea name="csv-data" id="csv-area" style="width: 800px;" rows="10"></textarea>
+                    <!-- <input type="button" name="to-emails" value="Email-adressen" > -->
+                    <!-- <input type="button" name="to-csv" value=" As CSV " > -->
+                    <input style="background-color: var(--menu);" type="submit" name="to-excel" value="Download checked students as Excel" >
                 </div>
             </form>
         {% endif %}

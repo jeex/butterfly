@@ -6,6 +6,7 @@ from helpers.singletons import UserSettings, Sysls, Students, Views
 
 from endpoint.studenten import (
 	Student,
+	Note,
 	StudentJinja,
 	filter_stuff,
 	get_student_filter,
@@ -54,11 +55,14 @@ def studenten_groep(groepnr=0, viewid=0):
 			dezegroep = g
 		groepen.append(g)
 
+	if dezegroep is None:
+		return redirect(f'/home')
+
 	# views
 	# get / set current viewid in usersettings
 	# view other group, same setting.
 	allfieldnames = list(Student.get_empty().keys())
-	groupviews = views_o.get_views_by_groupid(groepnr) # views_o.get()
+	groupviews = views_o.get_views_by_groupid(groepnr, activeonly=True) # views_o.get()
 	selectprimary = False
 
 	# get view if current or previous
@@ -103,6 +107,9 @@ def studenten_groep(groepnr=0, viewid=0):
 		view['fields'] = allfieldnames
 	view['fields'].append('id')
 
+	# normalize view
+	views_o.void_normalize(view)
+
 	# jinjafy
 	for key in list(groupviews.keys()):
 		# del default view, not to be shown or used
@@ -118,27 +125,27 @@ def studenten_groep(groepnr=0, viewid=0):
 
 	# studenten
 	students = list()
-	if dezegroep is None:
-		pass
-	else:
-		students_o = Students()
-		all = students_o.all_as_lod()
-		for s in all:
-			# filter on this group
-			if not s['s_group'] == groepnr:
-				continue
-			# alleen als registratie, student of grading
-			if not is_active_in_group(s, sta):
-				continue
-			s['filter'] = get_student_filter(s, sta)
-			s['todo'] = 0
-			for n in s['notes']:
-				if n['done'] == 0:
-					s['todo'] = 1
-					break
-			students.append(StudentJinja(s, Student.get_model()))
-		del (all)
+	students_o = Students()
+	students_o.init()
+	all = students_o.all_as_lod()
+	for s in all:
+		# filter on this group
+		if not s['s_group'] == groepnr:
+			continue
+		# alleen als registratie, student of grading
+		if not is_active_in_group(s, sta):
+			continue
+		s['filter'] = get_student_filter(s, sta)
+		s['todo'] = 0
+		for n in s['notes']:
+			if n['done'] == 0:
+				s['todo'] = 1
+				break
+		students.append(StudentJinja(s, Student.get_model()))
+	del (all)
 
+	if 'notes' in dezegroep:
+		dezegroep['notes'].reverse()
 	circular = sysls_o.get_sysl('s_circular')
 
 	return render_template(
@@ -164,6 +171,15 @@ def studenten_groep(groepnr=0, viewid=0):
 @ep_groepen.post('/<int:groepnr>/<int:viewid>')
 @ep_groepen.post('/<int:groepnr>')
 def studenten_groep_post(groepnr, viewid=0):
+	camefrom = request.referrer.split('?')[0]
+	if 'sort-field' in request.form and 'sort-dir' in request.form:
+		sf = request.form['sort-field']
+		sd = request.form['sort-dir']
+	else:
+		sf = 'firstname'
+		sd = 'asc'
+	camefrom = f"{camefrom}?sort-field={sf}&sort-dir={sd}"
+
 	if not IOstuff.check_required_keys(request.form, ['what', 'field-name', 'field-value', 'student-id']):
 		return redirect(f"/groepen/{groepnr}/{viewid}")
 
@@ -224,13 +240,18 @@ def studenten_groep_post(groepnr, viewid=0):
 	students_o.make_student_pickle(id, student)
 	# eventualy fix student dir issues
 	# fix_student_dir(id, student, student)
-	return redirect(f"/groepen/{groepnr}/{viewid}")
-
-
+	return redirect(camefrom)
 
 @ep_groepen.post('/asshole')
 def asshole_post():
-	camefrom = request.referrer
+	camefrom = request.referrer.split('?')[0]
+	if 'sort-field' in request.form and 'sort-dir' in request.form:
+		sf = request.form['sort-field']
+		sd = request.form['sort-dir']
+	else:
+		sf = 'firstname'
+		sd = 'asc'
+	camefrom = f"{camefrom}?sort-field={sf}&sort-dir={sd}"
 	try:
 		studid = Casting.int_(request.form['student-id'], default=None)
 		asshole = Casting.int_(request.form['asshole-field'], default=None)
@@ -249,3 +270,50 @@ def asshole_post():
 	student['assessment'] = asshole
 	students_o.make_student_pickle(studid, student)
 	return redirect(camefrom)
+
+@ep_groepen.post('/group-new-note/<int:groepnr>')
+def group_new_note_post(groepnr):
+	if not ('make-note' in request.form and 'new-note' in request.form):
+		return redirect(request.referrer)
+
+	note = Casting.str_(request.form['new-note'], '')
+	if note == '':
+		return redirect(request.referrer)
+
+	sysl_o = Sysls()
+	group = sysl_o.get_sysl_item('s_group', groepnr)
+	if group is None:
+		return redirect(request.referrer)
+
+	jus = UserSettings()
+	newnote = Note.get_empty()
+	newnote['note'] = note
+	newnote['alias'] = jus.alias()
+	newnote['created_ts'] = Timetools.now_secs()
+	newnote['done'] = 1
+	# print(group)
+	# print(newnote)
+	if not 'notes' in group:
+		group['notes'] = list()
+	group['notes'].append(newnote)
+	sysl_o.set_sysl_item('s_group', groepnr, group)
+	return redirect(request.referrer)
+
+@ep_groepen.post('/group-note/<int:groepnr>/<int:notenr>')
+def groep_note_delete(groepnr, notenr):
+	if not 'group-note-delete' in request.form:
+		return redirect(request.referrer)
+
+	sysl_o = Sysls()
+	group = sysl_o.get_sysl_item('s_group', groepnr)
+	if group is None:
+		return redirect(request.referrer)
+	if not 'notes' in group:
+		return redirect(request.referrer)
+
+	for note in list(group['notes']):
+		if note['created_ts'] == notenr:
+			group['notes'].remove(note)
+
+	sysl_o.set_sysl_item('s_group', groepnr, group)
+	return redirect(request.referrer)

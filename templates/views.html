@@ -128,6 +128,40 @@
                                 </table>
                             </form>
                         {% endif %}
+
+                        {% if viewname != 'default' and props.magda(['beheer']) %}
+                            <form name="deleteemailbutton" action="/views/emailbutton/{{ viewkey }}" method="post" style="margin-top: 1em; display: block;">
+                                <input type="hidden" name="delete-emb" value="1">
+                                <table style="width: 100%;">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                emailbuttons
+                                            </th>
+                                            {% if canedit %}
+                                                <th style="text-align: right;">
+                                                    erase
+                                                </th>
+                                            {% endif %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for eb in single._try('emailbuttons', default=[]) %}
+                                            <tr>
+                                                <td>
+                                                    {{ eb }}
+                                                </td>
+                                                {% if canedit %}
+                                                    <td style="text-align: right;">
+                                                        <input style="font-size: 0.8em;" type="submit" name="{{ eb }}" value="&#x274c;" >
+                                                    </td>
+                                                {% endif %}
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </form>
+                        {% endif %}
                     </div>
 
                     <!-- breed velden en zo -->
@@ -135,7 +169,7 @@
                         {% if not canedit %}
                             <h2>You cannot edit the view [{{ viewname }}], but you can copy it</h2>
                         {% elif canedit %}
-                            <h2>View {{ viewname }} by: {{ single._try('alias') }}</h2>
+                            <h2>View {{ viewname }} by: {{ single._try('alias') }} | {{ viewkey }}</h2>
                             <form method="post" class="single-form" action="/views/{{ viewkey }}">
                                 <input type="text"  pattern=".{3,}" name="changename" value="{{ single._try('name') }}">
                                 <input style="height: 1.5em;" type="color" name="color" value="{{ single._try('color') }}">
@@ -167,13 +201,21 @@
                                 <input type="submit" name="new-cycle-field" value="Make">
                             </form>
 
-                            {% if True %}
-                                <h2>Make Text Field</h2>
-                                <form class="single-form" name="customfield" style="display: block" method="post" action="/views/edit/{{ viewkey }}">
-                                    <input type="hidden" name="fieldnamelist" value="{{ single._try('fields')|join(',') }}">
-                                    <input type="text" class="custom-field" name="fieldname" value="" style="width: 6em;" pattern=".{2,}" required >
-                                    <input type="submit" name="new-text-field" value="Make">
+                            <h2>Make Text Field</h2>
+                            <form class="single-form" name="customfield" style="display: block" method="post" action="/views/edit/{{ viewkey }}">
+                                <input type="hidden" name="fieldnamelist" value="{{ single._try('fields')|join(',') }}">
+                                <input type="text" class="custom-field" name="fieldname" value="" style="width: 6em;" pattern=".{2,}" required >
+                                <input type="submit" name="new-text-field" value="Make">
+                            </form>
+
+                            {% if props.magda(['beheer']) %}
+                                <h2>Link Email buttons</h2>
+                                <form name="addemailbutton" style="display: block" method="post" action="/views/emailbutton/{{ viewkey }}">
+                                    {% for eb in emailbuttons %}
+                                        <input type="submit" style="margin-bottom: 0.25em;" name="add-emb" value="{{ eb }}">
+                                    {% endfor %}
                                 </form>
+                            </form>
                             {% endif %}
 
                             <h2>Link Groups</h2>
@@ -270,6 +312,11 @@
         $('form[name="deletefield"] input[type="submit"]').on('click', function(e){
             let btn_data = $(this).attr('name');
             $('form[name="deletefield"] input[name="fieldname"]').val(btn_data);
+        });
+
+        $('form[name="deleteemailbutton"] input[type="submit"]').on('click', function(e){
+            let btn_data = $(this).attr('name');
+            $('form[name="deleteemailbutton"] input[name="delete-emb"]').val(btn_data);
         });
 
         $('input.custom-field').on('keyup', function(){
