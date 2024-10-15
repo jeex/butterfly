@@ -167,12 +167,14 @@ def delete_post(viewid):
 	views_o.delete(viewid)
 	return redirect(f'/views/{views_o.get_defaultkey()}')
 
+# step 2 in copying a view
 @ep_views.post('/kopie/<int:copyid>')
 def kopie_post(copyid):
 	jus = UserSettings()
 	views_o = Views()
 	try:
 		newname = Casting.name_safe(request.form['newname'], True)
+		contents = Casting.int_(request.form['copy-contents'], default=0)
 		if newname == '':
 			return redirect(f'/views/{views_o.get_defaultkey()}')
 		if newname in views_o.get():
@@ -182,13 +184,14 @@ def kopie_post(copyid):
 
 	# make new views with newname
 	newview = views_o.get_single_by_key(copyid)
+	ppp(newview)
 	newid = Timetools.now_secs()
 	newview['name'] = newname
 	newview['alias'] = jus.alias()
 	newview['created_ts'] = newid
 	newview['groups'] = list()
 	newview['color'] = '#ffffff'
-	views_o.make_view(newview)
+	# views_o.make_view(newview)
 	return redirect(f"/views/{newid}")
 
 @ep_views.post('/group/<int:viewid>')

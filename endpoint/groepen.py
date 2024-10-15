@@ -191,6 +191,7 @@ def studenten_groep_post(groepnr, viewid=0):
 	what = Casting.str_(request.form['what'], '')
 
 	students_o = Students()
+	students_o.init()
 	student = students_o.get_by_id(id)
 
 	if student is None:

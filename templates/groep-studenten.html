@@ -53,14 +53,19 @@
         </form>
 
         {% set smalfields = ['id', 's_gender', 'todo', 'pf_url', 'grade', 's_ec', 's_lang', 'assessment'] %}
+        {% set fixedfields = ['id', 'assessment', 'firstname', 'lastname'] %}
         <div class="links">
             <table class="rotate-headers">
                 <thead>
                     <tr>
                         <th style="background-color: {{ view['color'] }};" class="contrast no-sort"><input type="checkbox" name="add" value="all"></th>
-                        <th id="id" style="background-color: {{ view['color'] }};" class="contrast"><span></span>id</th>
+
+                        {% for f in fixedfields %}
+                            <th style="background-color: {{ view['color'] }};" class="contrast {{ 'smal' if f in smalfields }} {{ 'no-sort' if f not in afns or f in ['grade', 'assessment'] }}" id="{{ f }}"><span></span>{{ view['nicenames'][f] }}</th>
+                        {% endfor %}
+
                         {% for f in view['fields'] %}
-                            {% if f in ['id', 'notes', 'circulars', 'customs', 'todo', 'kom_code', 'nhls_code'] %}
+                            {% if f in ['id', 'notes', 'circulars', 'customs', 'todo', 'kom_code', 'nhls_code'] or f in fixedfields %}
                                 <!-- pass -->
 
                             {% elif f.startswith('c_') %}
@@ -85,9 +90,19 @@
                     {% set id = s._id() %}
                     <tr id="{{ id }}" data-status="{{ s._try('s_status') }}" data-filter="{{ s._try('filter') }}">
                         <td style="background-color: {{ view['color'] }}; border-radius: 0;" ><input type="checkbox" name="add" value="{{ id }}"></td>
-                        <td data-csv="{{ id }}" ><a class="asbutton {{ 'valop' if s._try('todo') == 1 }}" href="/studenten/single/{{ id }}">{{ id|vier }}</a></td>
+                        {% for f in fixedfields %}
+                            {% if f == 'id' %}
+                                <td data-csv="{{ id }}" ><a class="asbutton {{ 'valop' if s._try('todo') == 1 }}" href="/studenten/single/{{ id }}">{{ id|vier }}</a></td>
+                            {% elif f == 'assessment' %}
+                                <td class="dblignore do-asshole" data-csv="{{ s._try('assessment', default=0) }}" style="background-color: {{ s._ass() }}"></td>
+                            {% else %}
+                                <td class="{{ 'dblignore' if f == 'email' }}" data-csv="{{ s._try(f) }}" data-th="{{ f }}">{{ s._try(f) }}</td>
+                            {% endif %}
+                        {% endfor %}
+
                         {% for f in view['fields'] %}
-                            {% if f in ['id', 'notes', 'circulars', 'customs', 'todo', 'kom_code', 'nhls_code'] %}
+                            {% if f in ['id', 'notes', 'circulars', 'customs', 'todo', 'kom_code', 'nhls_code'] or f in fixedfields %}
+                                <!-- pass -->
 
                             {% elif f == 'samestudent' %}
                                 {% set same = s._try('samestudent', default=[]) %}
@@ -107,9 +122,6 @@
                                 <td class="dblignore {{ s._try('grade')|gradecss }}" data-csv="{{ s._try('grade') }}" data-th="grade">
                                     <input type="number" step="10" min="0" max="100" name="grade" value="{{ s._try('grade') }}" style="width: 5em; font-size: 1em; padding: 0.1em;">
                                 </td>
-
-                            {% elif f == 'assessment' %}
-                                <td class="dblignore do-asshole" data-csv="{{ s._try('assessment', default=0) }}" style="background-color: {{ s._ass() }}"></td>
 
                             {% elif f in ['grade_ts', 'created_ts'] %}
                                 <td data-csv="{{ s._try(f)|date }}" data-th="{{ f }}">{{ s._try(f)|date }}</td>

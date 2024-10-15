@@ -243,7 +243,7 @@ app.register_blueprint(ep_website)
 if not app.config['initialized']:
 	webtest = False
 	Mainroad.devdev = False
-	Mainroad.version = '1.09'
+	Mainroad.version = '1.10'
 	Mainroad.before_webview_start()
 	Mainroad.loglog(f"\nSTART {Timetools.now_string()}\n")
 	app.config['initialized'] = True

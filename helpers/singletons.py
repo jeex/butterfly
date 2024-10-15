@@ -405,7 +405,7 @@ class Views(metaclass=ViewsMeta):
 		all = self._sysmem
 		mijnviews = list()
 		for key, val in all.items():
-			if val['alias'] == jus.alias():
+			if jus.alias() == val['alias']:
 				mijnviews.append(key)
 		return mijnviews
 
@@ -415,7 +415,7 @@ class Views(metaclass=ViewsMeta):
 		all = self._sysmem
 		mijngroepen = list()
 		for key, val in all.items():
-			if val['alias'] == jus.alias() and val['status'] > 0:
+			if jus.alias() == val['alias'] and val['status'] > 0:
 				for g in val['groups']:
 					if not g in mijngroepen:
 						mijngroepen.append(g)
@@ -452,6 +452,13 @@ class Students(metaclass=StudentsMeta):
 				continue
 			if not fname.endswith('.pickle'):
 				continue
+			if '-LAP-' in fname:
+				try:
+					os.remove(os.path.join(self._stud_p_path, fname))
+				except:
+					pass
+				continue
+
 			d = Pickles.read(os.path.join(self._stud_p_path, fname))
 			try:
 				id = d['id']

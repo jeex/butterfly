@@ -3,7 +3,7 @@
 {% set viewname = single._try('name') %}
 {% set viewkey = single._try('created_ts') %}
 {% set minfields = ['id', 'assessment', 'firstname', 'lastname'] %}
-{% set canedit = props.magda(['docent'], alias=single._try('alias')) and viewname != 'default' and single._try('alias') == props.alias() %}
+{% set canedit = props.magda(['docent'], alias=single._try('alias')) and viewname != 'default' and props.alias() == single._try('alias') %}
 </head>
 <body>
     {% include '_menu.html' %}
@@ -30,7 +30,7 @@
                                     {% if a in mijnviews and aa._try('status', default=0) == status %}
                                         <tr id="view-{{ a }}">
                                             <td><a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/{{ a }}/copy">copy</a></td>
-                                            <td><a style="{{ 'color: #888;' if aa._try('status') < 1 }}" class="asbutton" href="/views/{{ a }}">{{ aa._try('name') }}</a></td>
+                                            <td><a style="{{ 'color: #888;' if aa._try('status') < 1 }}; border-color: {{ aa._try('color') }}; border-width: 2px;" class="asbutton" href="/views/{{ a }}">{{ aa._try('name') }}</a></td>
                                             <td>{{ aa._try('alias') }} {{ aa._try('created_ts')|date }}</td>
                                         </tr>
                                     {% endif %}
@@ -42,7 +42,7 @@
                                 {% if a != 'default' and a not in mijnviews %}
                                     <tr>
                                         <td style="background-color: #ddd;"><a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/{{ a }}/copy">copy</a></td>
-                                        <td style="background-color: #ddd;"><a style="{{ 'color: #888;' if aa._try('status') < 1 }}" class="asbutton" href="/views/{{ a }}">{{ aa._try('name') }}</a></td>
+                                        <td style="background-color: #ddd;"><a style="{{ 'color: #888;' if aa._try('status') < 1 }}; border-color: {{ aa._try('color') }}; border-width: 2px;" class="asbutton" href="/views/{{ a }}">{{ aa._try('name') }}</a></td>
                                         <td style="background-color: #ddd;">{{ aa._try('alias') }} {{ aa._try('created_ts')|date }}</td>
                                     </tr>
                                 {% endif %}
@@ -239,6 +239,12 @@
                         <h2>Make a copy of: {{ viewname }}</h2>
                         <form class="single-form" name="kopie" method="post" action="/views/kopie/{{ viewkey }}">
                             <input pattern=".{3,}" required type="text" name="newname" placeholder="Name of the copy">
+                            <!-- <span style="background-color: #eee; border: 1px solid #ddd; border-radius: 3px; padding: 0.25em 0.5em; margin: 0 0.5em 0.25em 0;">
+                                <input type="radio" name="copy-contents" value="0" checked> skeleton only
+                            </span>
+                            <span style="background-color: #eee; border: 1px solid #ddd; border-radius: 3px; padding: 0.25em 0.5em; margin: 0 0.5em 0.25em 0;">
+                                <input type="radio" name="copy-contents" value="1"> copy contents
+                            </span> -->
                             <input type="submit" name="kopieer" value="Copy">
                         </form>
                     </div>
