@@ -145,7 +145,7 @@ def asdatetime(i):
 @app.before_request
 def before_request():
 	rp = request.full_path
-	if '/static/' in rp or '/favicon.ico' in rp:
+	if '/static/' in rp or '/favicon.ico' in rp or '/generate/' in rp:
 		return
 	jus = UserSettings()
 
@@ -227,6 +227,9 @@ app.register_blueprint(ep_groepen)
 from endpoint.views import ep_views
 app.register_blueprint(ep_views)
 
+from endpoint.editviews import ep_editviews
+app.register_blueprint(ep_editviews)
+
 # from endpoint.hunts import ep_hunts
 # app.register_blueprint(ep_hunts)
 
@@ -247,6 +250,7 @@ if not app.config['initialized']:
 	Mainroad.before_webview_start()
 	Mainroad.loglog(f"\nSTART {Timetools.now_string()}\n")
 	app.config['initialized'] = True
+	app.config['dev_magda'] = ['administratie', 'docent', 'beheer', 'admin'] # ['administratie', 'docent', 'beheer', 'admin']
 
 if not Mainroad.devdev:
 	@app.errorhandler(Exception)

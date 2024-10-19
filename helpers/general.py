@@ -195,16 +195,22 @@ class Mainroad:
 			if user is None:
 				continue
 			else:
-				user['password'] = password
-				return user
+				try:
+					user['password'] = password
+					return user
+				except:
+					pass
 			# repeat
 
 	@classmethod
 	def check_login(cls, odpath, password: str) -> dict|None:
 		users = Pickles.read(f"{odpath}/system/s_srs.pickle")
 		for user in users: # users is list
-			if user['password'] == password:
-				return user
+			try:
+				if user['password'] == password:
+					return user
+			except:
+				pass
 		return None
 
 	@classmethod
@@ -621,6 +627,10 @@ class Timetools:
 			return f'{d[2]}-{d[1]}-{d[0]}'
 		except:
 			return erin
+
+	@classmethod
+	def sleep(cls, s: float):
+		time.sleep(s)
 
 # General functions for List and Dict manipulation
 class ListDicts:

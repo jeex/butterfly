@@ -1,5 +1,15 @@
 var filters = {}; // column:[value]
 
+let isValidHttpUrl = function(string){
+    let url;
+    try{
+        url = new URL(string);
+    }catch (_){
+        return false;
+    }
+    return url.protocol === "http:" || url.protocol === "https:";
+}
+
 let filters_count_shown = function(){
     var shown = 0
     $.each($('tbody tr'), function(){
@@ -390,7 +400,11 @@ $(function(){
                 $('table th#'+sortfield).trigger('click');
             }
         }else{
-            $('table th:nth-of-type(4)').trigger('click')
+            {% if 'views' in request.url %}
+                $('table th:nth-of-type(5)').trigger('click')
+            {% else %}
+                $('table th:nth-of-type(4)').trigger('click')
+            {% endif %}
         }
     {% endif %}
 

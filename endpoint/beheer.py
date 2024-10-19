@@ -1,6 +1,6 @@
 from flask import redirect, request, Blueprint, render_template
 
-from helpers.general import Casting, IOstuff, ListDicts, JINJAstuff, Mainroad
+from helpers.general import Casting, IOstuff, ListDicts, JINJAstuff, Mainroad, Timetools
 from helpers.singletons import UserSettings, Sysls, Students
 
 def jinja_object(ding):
@@ -22,19 +22,24 @@ menuitem = 'beheer'
 def generate():
 	# generate all student folders (if not exist)
 	# generate all html files (overwrite)
-	#
-	print('hier')
+
 	students_o = Students()
 	all = students_o.all()
 	if not isinstance(all, dict):
 		return redirect('/home')
+	print(f'Doing it [0]    ', end='', flush=True)
+	i = 0
 	for key in all.keys():
 		students_o.as_html(key)
+		i += 1
+		print(f'\rDoing it [{i}]    ', end='', flush=True)
+		Timetools.sleep(0.25)
+	print()
 
 	# now open containing folder
 	pad = Mainroad.get_student_dirs_path()
 	Mainroad.loglog(f'\nGENERATED {pad}\n')
-	students_o.open_dir(pad)
+	# students_o.open_dir(pad)
 	return redirect('/home')
 
 @ep_beheer.get('/<path:sysl>/<int:id>')

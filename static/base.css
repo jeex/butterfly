@@ -151,12 +151,21 @@ menu.submenu{
     margin-left: 0.5em;
     margin-top: 0.25em;
 }
-menu#mainmenu li{
+menu#mainmenu li:not(.spacer){
     padding: 0.5em;
     cursor: pointer;
     background-color: var(--zwart);
     color: var(--wit);
     margin-left: 0.2em;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    border-radius: 1px
+}
+menu#mainmenu li.spacer{
+    padding: 0.5em 0;
+    margin-left: 0.25em;
+    margin-right: 0.1em;
     font-family: inherit;
     font-size: inherit;
     font-weight: inherit;

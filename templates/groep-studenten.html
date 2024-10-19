@@ -36,10 +36,11 @@
             <a href="/groepen/{{ groep['id'] }}/1" class="asbutton contrast" style="background-color: black">all</a>
         </div>
 
-        <form id="no-ajax" style="display: none;" method="post" action="/groepen/{{ groep['id'] }}/{{ viewid }}">
+        <form id="no-ajax" style="display: none;" method="post" action="/groepen/noajax">
             <input form="no-ajax" name="student-id" value="" type="hidden">
             <input form="no-ajax" name="field-name" value="" type="hidden">
             <input form="no-ajax" name="field-value" value="" type="hidden">
+            <input form="no-ajax" name="view-id" value="" type="hidden">
             <input form="no-ajax" name="what" value="" type="hidden">
             <input form="no-ajax" type="hidden" name="sort-field" value="">
             <input form="no-ajax" type="hidden" name="sort-dir" value="">
@@ -88,7 +89,7 @@
                 <tbody>
                 {% for s in students %}
                     {% set id = s._id() %}
-                    <tr id="{{ id }}" data-status="{{ s._try('s_status') }}" data-filter="{{ s._try('filter') }}">
+                    <tr id="{{ id }}" data-status="{{ s._try('s_status') }}" data-filter="{{ s._try('filter') }}" data-viewid="{{ viewid }}">
                         <td style="background-color: {{ view['color'] }}; border-radius: 0;" ><input type="checkbox" name="add" value="{{ id }}"></td>
                         {% for f in fixedfields %}
                             {% if f == 'id' %}
@@ -223,16 +224,7 @@
     {% include 'studenten.js' %}
 </script>
 <script>
-    let isValidHttpUrl = function(string){
-        let url;
-        try{
-            url = new URL(string);
-        }catch (_){
-            return false;
-        }
-        return url.protocol === "http:" || url.protocol === "https:";
-    }
-
+$(function(){
     $('input[name="pf_url"]').on('keypress', function(e){
         var keycode = (e.keyCode ? e.keyCode : e.which);
         if(keycode == 13){
@@ -246,6 +238,8 @@
             $('#no-ajax input[name="field-value"]').val(pfu);
             let id = $(this).closest('tr').attr('id')*1;
             $('#no-ajax input[name="student-id"]').val(id)
+            let viewid = $(this).closest('tr').attr('data-viewid')*1;
+            $('#no-ajax input[name="view-id"]').val(viewid);
             $('#no-ajax').submit();
         }
     });
@@ -263,6 +257,8 @@
             $('#no-ajax input[name="field-value"]').val(grade);
             let id = $(this).closest('tr').attr('id')*1;
             $('#no-ajax input[name="student-id"]').val(id)
+            let viewid = $(this).closest('tr').attr('data-viewid')*1;
+            $('#no-ajax input[name="view-id"]').val(viewid);
             $('#no-ajax').submit();
         }
     });
@@ -276,6 +272,8 @@
             $('#no-ajax input[name="field-name"]').val(cusname);
             $('#no-ajax input[name="what"]').val('customs');
             $('#no-ajax input[name="field-value"]').val(cusval);
+            let viewid = $(this).closest('tr').attr('data-viewid')*1;
+            $('#no-ajax input[name="view-id"]').val(viewid);
             $('#no-ajax').submit();
         }
     });
@@ -288,6 +286,8 @@
         $('#no-ajax input[name="field-name"]').val(cirname);
         $('#no-ajax input[name="what"]').val('circulars');
         $('#no-ajax input[name="field-value"]').val(cirval);
+        let viewid = $(this).closest('tr').attr('data-viewid')*1;
+        $('#no-ajax input[name="view-id"]').val(viewid);
         $('#no-ajax').submit();
     });
 
@@ -298,6 +298,8 @@
         }
         let id = $(this).closest('tr').attr('id')*1;
         let cirname = $(this).attr('data-cirname');
+        let viewid = $(this).closest('tr').attr('data-viewid')*1;
+        $('#no-ajax input[name="view-id"]').val(viewid);
         $('#no-ajax input[name="student-id"]').val(id)
         $('#no-ajax input[name="field-name"]').val(cirname);
         $('#no-ajax input[name="what"]').val('circulars');
@@ -322,7 +324,7 @@
         $('#asshole input[name="asshole-field"]').val(curval);
         $('#asshole').submit();
     })
-
+});
 </script>
 </body>
 </html>

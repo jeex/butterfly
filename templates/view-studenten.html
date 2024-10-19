@@ -1,0 +1,274 @@
+{% include '_head.html' %}
+<link rel="stylesheet" href="/static/studenten.css" />
+</head>
+<body>
+    {% include '_menu.html' %}
+        <menu class="submenu">
+            <ul>
+                {% for thing in allviews %}
+                    {% if thing['alias'] == props.alias() %}
+                        <li class="contrast" style="border: 1px solid white; background-color: {{ thing['color'] }}">
+                            <a class="must-sort" href="/views/{{ thing['created_ts'] }}">
+                                {% if viewid == thing['created_ts'] %}
+                                    {{ thing['name'] }} [{{ students|length }}]
+                                {% else %}
+                                    {{ thing['name'] }}
+                                {% endif %}
+                            </a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                <li class="" style="width: 2px; height: 2.5em; padding: 0; background-color: black; margin-right: 0.1em;"></li>
+                {% for thing in allviews %}
+                    {% if thing['alias'] != props.alias() %}
+                        <li class="contrast" style="border: 1px solid white; background-color: {{ thing['color'] }}">
+                            <a class="must-sort" href="/views/{{ thing['created_ts'] }}">
+                                {% if viewid == thing['created_ts'] %}
+                                    {{ thing['name'] }} [{{ students|length }}]
+                                {% else %}
+                                    {{ thing['name'] }}
+                                {% endif %}
+                            </a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </menu>
+    </header>
+    <main>
+        <form id="no-ajax" style="display: none;" method="post" action="/groepen/noajax">
+            <input form="no-ajax" name="student-id" value="" type="hidden">
+            <input form="no-ajax" name="field-name" value="" type="hidden">
+            <input form="no-ajax" name="field-value" value="" type="hidden">
+            <input form="no-ajax" name="view-id" value="" type="hidden">
+            <input form="no-ajax" name="what" value="" type="hidden">
+            <input form="no-ajax" type="hidden" name="sort-field" value="">
+            <input form="no-ajax" type="hidden" name="sort-dir" value="">
+        </form>
+
+        <form id="asshole" style="display: none;" method="post" action="/groepen/asshole/">
+            <input form="asshole" name="student-id" value="" type="hidden">
+            <input form="asshole" name="asshole-field" value="" type="hidden">
+            <input form="asshole" type="hidden" name="sort-field" value="">
+            <input form="asshole" type="hidden" name="sort-dir" value="">
+        </form>
+
+        {% set smalfields = ['id', 's_gender', 'todo', 'pf_url', 'grade', 's_ec', 's_lang', 'assessment'] %}
+        {% set fixedfields = ['id', 'assessment', 'firstname', 'lastname'] %}
+
+        <div class="links">
+            <table class="rotate-headers">
+                <thead>
+                    <tr>
+                        <th style="background-color: {{ view['color'] }};" class="contrast no-sort"><input type="checkbox" name="add" value="all"></th>
+                        <th style="background-color: {{ view['color'] }};" class="contrast " id="s_group"><span></span>group</th>
+
+                        {% for f in fixedfields %}
+                            <th style="background-color: {{ view['color'] }};" class="contrast {{ 'smal' if f in smalfields }} {{ 'no-sort' if f not in dfns or f in ['grade', 'assessment'] }}" id="{{ f }}"><span></span>{{ view['nicenames'][f] }}</th>
+                        {% endfor %}
+
+                        {% for f in view['fields'] %}
+                            {% if f in ['id', 'notes', 'circulars', 'customs', 'todo', 'kom_code', 'nhls_code'] or f in fixedfields %}
+                                <!-- pass -->
+
+                            {% elif f.startswith('c_') %}
+                                <th style="background-color: {{ view['color'] }};" class="contrast smal circular no-sort" id="{{ f }}"><span></span>{{ f.replace('c_', '') }}</th>
+
+                            {% elif f.startswith('t_') %}
+                                <th style="background-color: {{ view['color'] }};" class="contrast smal custom no-sort" id="{{ f }}"><span></span>{{ f.replace('t_', '') }}</th>
+
+                            {% else %}
+                                <th style="background-color: {{ view['color'] }};" class="contrast {{ 'smal' if f in smalfields }} {{ 'no-sort' if f not in afns or f in ['grade', 'assessment'] }}" id="{{ f }}"><span></span>{{ view['nicenames'][f] }}</th>
+                            {% endif %}
+                        {% endfor %}
+
+                        <!-- add email buttons if any -->
+                        {% for emb in view['emailbuttons'] %}
+                            <th style="background-color: {{ view['color'] }};" class="contrast custom no-sort" id="emb-{{ emb }}"><span></span>{{ emb }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in students %}
+                        {% set id = s._id() %}
+                        {% set group = groups[s._try('s_group')] %}
+                        <tr id="{{ id }}" data-status="{{ s._try('s_status') }}" data-filter="{{ s._try('filter') }}" data-viewid="{{ viewid }}" >
+
+                            <td style="background-color: {{ view['color'] }}; border-radius: 0;" ><input type="checkbox" name="add" value="{{ id }}"></td>
+                            <td class="goto-group" style="background-color: {{ group._try('color') }}; border-radius: 0;" data-th="{{ s._try('s_group') }}">{{ group._try('name') }}</td>
+
+                            {% for f in fixedfields %}
+                                {% if f == 'id' %}
+                                    <td data-csv="{{ id }}" ><a class="asbutton {{ 'valop' if s._try('todo') == 1 }}" href="/studenten/single/{{ id }}">{{ id|vier }}</a></td>
+                                {% elif f == 'assessment' %}
+                                    <td class="dblignore do-asshole" data-csv="{{ s._try('assessment', default=0) }}" style="background-color: {{ s._ass() }}"></td>
+                                {% else %}
+                                    <td class="{{ 'dblignore' if f == 'email' }}" data-csv="{{ s._try(f) }}" data-th="{{ f }}">{{ s._try(f) }}</td>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% for f in view['fields'] %}
+                                {% if f in ['id', 'notes', 'circulars', 'customs', 'todo', 'kom_code', 'nhls_code'] or f in fixedfields %}
+                                    <!-- pass -->
+
+                                {% elif f == 'samestudent' %}
+                                    {% set same = s._try('samestudent', default=[]) %}
+                                    <td class="dblignore">
+                                        {% for ss in same %}
+                                            <a class="asbutton" href="/studenten/single/{{ ss }}">{{ ss }}</a>
+                                         {% endfor %}
+                                    </td>
+
+                                {% elif f == 'pf_url' %}
+                                    <td class="dblignore" data-csv="{{ s._try('pf_url') }}" data-th="pf_url">
+                                        <input type="url" name="pf_url" value="{{ s._try('pf_url') }}" style="width: 5em; font-size: 1em; padding: 0.1em;">
+                                        {% if s._try('pf_url') != '' %}<a class="asbutton" href="{{ s._try('pf_url') }}" target="_blank">&rarr;</a>{% else %}&nbsp;{% endif %}
+                                    </td>
+
+                                {% elif f == 'grade' %}
+                                    <td class="dblignore {{ s._try('grade')|gradecss }}" data-csv="{{ s._try('grade') }}" data-th="grade">
+                                        <input type="number" step="10" min="0" max="100" name="grade" value="{{ s._try('grade') }}" style="width: 5em; font-size: 1em; padding: 0.1em;">
+                                    </td>
+
+                                {% elif f in ['grade_ts', 'created_ts'] %}
+                                    <td data-csv="{{ s._try(f)|date }}" data-th="{{ f }}">{{ s._try(f)|date }}</td>
+
+                                {% elif f.startswith('c_') %}
+                                    <td style="cursor:pointer; background-color: {{ s._circular(viewid, f)|circ }}; border: 1px solid white;" data-cirname="{{ f }}" data-cirval="{{ s._circular(viewid, f) }}" data-csv="{{ s._circular(viewid, f) }}" class="contrast circular dblignore"></td>
+
+                                {% elif f.startswith('t_') %}
+                                    <td data-cusname="{{ f }}" data-cusval="{{ s._custom(viewid, f) }}" data-csv="{{ s._custom(viewid, f) }}" class="contrast custom dblignore"><input style="width: 6em!important;" type="text" name="{{ f }}" value="{{ s._custom(viewid, f) }}"></td>
+
+                                {% elif f.startswith('s_') %}
+                                    {% set item = s._s_item(f) %}
+                                    <td data-csv="{{ item['name']|nbsp|safe }}" class="{{ 'smal' if f in smalfields }}" data-th="{{ f }}" data-idnr="{{ item['id'] }}" style="background-color: {{ item['color'] }};">{{ item['name']|nbsp|safe }}</td>
+
+                                {% else %}
+                                    <td class="{{ 'dblignore' if f == 'email' }}" data-csv="{{ s._try(f) }}" data-th="{{ f }}">{{ s._try(f) }}</td>
+                                {% endif %}
+                            {% endfor %}
+
+                            <!-- add email buttons if any -->
+                            {% for emb in view['emailbuttons'] %}
+                                <td class=""><a class="asbutton" href="/studenten/emailbutton/{{ emb }}/{{ id }}">{{ emb }}</a></td>
+                            {% endfor %}
+
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+<script>
+    {% include 'studenten.js' %}
+</script>
+<script>
+$(function(){
+   $('input[name="pf_url"]').on('keypress', function(e){
+        var keycode = (e.keyCode ? e.keyCode : e.which);
+        if(keycode == 13){
+            let pfu = $(this).val();
+            if(!isValidHttpUrl(pfu) && pfu !== ''){
+                $(this).val('')
+                return;
+            }
+            $('#no-ajax input[name="field-name"]').val('pf_url');
+            $('#no-ajax input[name="what"]').val('portfolio');
+            $('#no-ajax input[name="field-value"]').val(pfu);
+            let id = $(this).closest('tr').attr('id')*1;
+            $('#no-ajax input[name="student-id"]').val(id)
+            let viewid = $(this).closest('tr').attr('data-viewid')*1;
+            $('#no-ajax input[name="view-id"]').val(viewid);
+            $('#no-ajax').submit();
+        }
+    });
+
+    $('input[name="grade"]').on('keypress', function(e){
+        var keycode = (e.keyCode ? e.keyCode : e.which);
+        if(keycode == 13){
+            let grade = $(this).val()*1;
+            if(grade < 0 || grade > 90){
+                $(this).val('').addClass('valop');
+                return;
+            }
+            $('#no-ajax input[name="field-name"]').val('grade');
+            $('#no-ajax input[name="what"]').val('grade');
+            $('#no-ajax input[name="field-value"]').val(grade);
+            let id = $(this).closest('tr').attr('id')*1;
+            $('#no-ajax input[name="student-id"]').val(id)
+            let viewid = $(this).closest('tr').attr('data-viewid')*1;
+            $('#no-ajax input[name="view-id"]').val(viewid);
+            $('#no-ajax').submit();
+        }
+    });
+
+    $('td.custom input').on('keypress',function(e) {
+        if(e.which === 13){
+            let id = $(this).closest('tr').attr('id')*1;
+            let cusval = $(this).val().trim();
+            let cusname =$(this).prop('name');
+            let viewid = $(this).closest('tr').attr('data-viewid')*1;
+            $('#no-ajax input[name="student-id"]').val(id)
+            $('#no-ajax input[name="field-name"]').val(cusname);
+            $('#no-ajax input[name="what"]').val('customs');
+            $('#no-ajax input[name="field-value"]').val(cusval);
+            $('#no-ajax input[name="view-id"]').val(viewid);
+            $('#no-ajax').submit();
+        }
+    });
+
+    $('td.circular').on('click', function(e){
+        let id = $(this).closest('tr').attr('id')*1;
+        let cirval = $(this).attr('data-cirval')*1;
+        let cirname = $(this).attr('data-cirname');
+        let viewid = $(this).closest('tr').attr('data-viewid')*1;
+        $('#no-ajax input[name="student-id"]').val(id)
+        $('#no-ajax input[name="field-name"]').val(cirname);
+        $('#no-ajax input[name="what"]').val('circulars');
+        $('#no-ajax input[name="field-value"]').val(cirval);
+        $('#no-ajax input[name="view-id"]').val(viewid);
+        $('#no-ajax').submit();
+    });
+
+    $('td.circular').on('contextmenu', function(){
+        var cirval = $(this).attr('data-cirval')*1;
+        if(cirval < 1){
+            return;
+        }
+        let id = $(this).closest('tr').attr('id')*1;
+        let cirname = $(this).attr('data-cirname');
+        let viewid = $(this).closest('tr').attr('data-viewid')*1;
+        $('#no-ajax input[name="student-id"]').val(id)
+        $('#no-ajax input[name="field-name"]').val(cirname);
+        $('#no-ajax input[name="what"]').val('circulars');
+        $('#no-ajax input[name="field-value"]').val(3);
+        $('#no-ajax input[name="view-id"]').val(viewid);
+        $('#no-ajax').submit();
+    });
+
+    // toggle cumlaude, asshole or no assessment
+    $('td.do-asshole').on('click', function(){
+        let id = $(this).closest('tr').attr('id')*1;
+        let curval = $(this).attr('data-csv')*1;
+        if(curval == 0) {
+            // cumlaude
+            curval = 1;
+        }else if(curval == 1){
+            // asshole
+            curval = 2;
+        }else{
+            curval = 0;
+        }
+        $('#asshole input[name="student-id"]').val(id);
+        $('#asshole input[name="asshole-field"]').val(curval);
+        $('#asshole').submit();
+    })
+
+    $('.goto-group').on('contextmenu', function(){
+        let groupid = $(this).attr('data-th');
+        window.location.replace("/groepen/"+groupid);
+    })
+});
+</script>
+</body>
+</html>

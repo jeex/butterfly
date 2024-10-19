@@ -16,22 +16,24 @@
                     <table class="view-links">
                         <tbody>
                             <tr>
-                                <td style="background-color: #ddd;"><a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/{{ default._try('created_ts') }}/copy">copy</a></td>
-                                <td style="background-color: #ddd;"><a style="{{ 'color: #888;' if default._try('status') < 1 }}" class="asbutton" href="/views/{{ default._try('created_ts') }}">default</a></td>
+                                <td style="background-color: #ddd;"><a class="asbutton kopieknop" style="background-color: var(--menu)" href="/editviews/{{ default._try('created_ts') }}/copy">copy</a></td>
+                                <td style="background-color: #ddd;"><a style="{{ 'color: #888;' if default._try('status') < 1 }}" class="asbutton" href="/editviews/{{ default._try('created_ts') }}">default</a></td>
+                                <td style="background-color: #ddd;">&nbsp;</td>
                                 <td style="background-color: #ddd;">&nbsp;</td>
                             </tr>
                         </tbody>
                         <tbody class="sort sorted-views">
-                            <form name="form-sorted-views" method="post" action="/views/sort-views">
+                            <form name="form-sorted-views" method="post" action="/editviews/sort-views">
                                 <input type="hidden" name="viewids" value="">
                             </form>
                             {% for status in [2, 1, 0] %}
                                 {% for a, aa in all.items() %}
                                     {% if a in mijnviews and aa._try('status', default=0) == status %}
                                         <tr id="view-{{ a }}">
-                                            <td><a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/{{ a }}/copy">copy</a></td>
-                                            <td><a style="{{ 'color: #888;' if aa._try('status') < 1 }}; border-color: {{ aa._try('color') }}; border-width: 2px;" class="asbutton" href="/views/{{ a }}">{{ aa._try('name') }}</a></td>
+                                            <td><a class="asbutton kopieknop" style="background-color: var(--menu)" href="/editviews/{{ a }}/copy">copy</a></td>
+                                            <td><a style="{{ 'color: #888;' if aa._try('status') < 1 }}; border-color: {{ aa._try('color') }}; border-width: 2px;" class="asbutton" href="/editviews/{{ a }}">{{ aa._try('name') }}</a></td>
                                             <td>{{ aa._try('alias') }} {{ aa._try('created_ts')|date }}</td>
+                                            <td style="background-color: #ddd;"><a class="asbutton" href="/views/{{ a }}">&rarr;</a></td>
                                         </tr>
                                     {% endif %}
                                 {% endfor %}
@@ -41,9 +43,10 @@
                             {% for a, aa in all.items() %}
                                 {% if a != 'default' and a not in mijnviews %}
                                     <tr>
-                                        <td style="background-color: #ddd;"><a class="asbutton kopieknop" style="background-color: var(--menu)" href="/views/{{ a }}/copy">copy</a></td>
-                                        <td style="background-color: #ddd;"><a style="{{ 'color: #888;' if aa._try('status') < 1 }}; border-color: {{ aa._try('color') }}; border-width: 2px;" class="asbutton" href="/views/{{ a }}">{{ aa._try('name') }}</a></td>
+                                        <td style="background-color: #ddd;"><a class="asbutton kopieknop" style="background-color: var(--menu)" href="/editviews/{{ a }}/copy">copy</a></td>
+                                        <td style="background-color: #ddd;"><a style="{{ 'color: #888;' if aa._try('status') < 1 }}; border-color: {{ aa._try('color') }}; border-width: 2px;" class="asbutton" href="/editviews/{{ a }}">{{ aa._try('name') }}</a></td>
                                         <td style="background-color: #ddd;">{{ aa._try('alias') }} {{ aa._try('created_ts')|date }}</td>
+                                        <td style="background-color: #ddd;"><a class="asbutton" href="/views/{{ a }}">&rarr;</a></td>
                                     </tr>
                                 {% endif %}
                             {% endfor %}
@@ -57,7 +60,7 @@
                 {% if not kopie %}
                     <!-- tabel MIDDEN KOLOM -->
                     <div style=" display: block; width: 150px; border: 1px solid {{ single._try('color') }}; background-color: {{ single._try('color') }}; padding: 0.25em; border-radius: 3px; margin: 1em 1em 0 0;">
-                        <form name="deletefield" method="post" action="/views/edit/{{ viewkey }}" class="fields-fixed">
+                        <form name="deletefield" method="post" action="/editviews/edit/{{ viewkey }}" class="fields-fixed">
                             <input type="hidden" name="delete-field" value="1">
                             <input type="hidden" name="fieldname" value="">
                             <input type="hidden" name="fieldnamelist" value="{{ single._try('fields')|join(',') }}">
@@ -96,7 +99,7 @@
                         </form>
 
                         {% if viewname != 'default' %}
-                            <form action="/views/group/{{ viewkey }}" method="post" style="margin-top: 1em; display: block;">
+                            <form action="/editviews/group/{{ viewkey }}" method="post" style="margin-top: 1em; display: block;">
                                 <input type="hidden" name="delete-group" value="1">
                                 <table style="width: 100%;">
                                     <thead>
@@ -130,7 +133,7 @@
                         {% endif %}
 
                         {% if viewname != 'default' and props.magda(['beheer']) %}
-                            <form name="deleteemailbutton" action="/views/emailbutton/{{ viewkey }}" method="post" style="margin-top: 1em; display: block;">
+                            <form name="deleteemailbutton" action="/editviews/emailbutton/{{ viewkey }}" method="post" style="margin-top: 1em; display: block;">
                                 <input type="hidden" name="delete-emb" value="1">
                                 <table style="width: 100%;">
                                     <thead>
@@ -170,7 +173,7 @@
                             <h2>You cannot edit the view [{{ viewname }}], but you can copy it</h2>
                         {% elif canedit %}
                             <h2>View {{ viewname }} by: {{ single._try('alias') }} | {{ viewkey }}</h2>
-                            <form method="post" class="single-form" action="/views/{{ viewkey }}">
+                            <form method="post" class="single-form" action="/editviews/{{ viewkey }}">
                                 <input type="text"  pattern=".{3,}" name="changename" value="{{ single._try('name') }}">
                                 <input style="height: 1.5em;" type="color" name="color" value="{{ single._try('color') }}">
                                 <span style="background-color: #eee; border: 1px solid #ddd; border-radius: 3px; padding: 0.25em 0.5em; margin: 0 0.5em 0.25em 0;">
@@ -183,7 +186,7 @@
                             </form>
 
                             <h2>Link Fields:</h2>
-                            <form name="addfield" style="display: block" method="post" action="/views/edit/{{ viewkey }}">
+                            <form name="addfield" style="display: block" method="post" action="/editviews/edit/{{ viewkey }}">
                                 <input type="hidden" name="fieldname" value="">
                                 <input type="hidden" name="add-field" value="1">
                                 <input type="hidden" name="fieldnamelist" value="{{ single._try('fields')|join(',') }}">
@@ -195,14 +198,14 @@
                             </form>
 
                             <h2>Make Color Field</h2>
-                            <form class="single-form" name="circularfield" style="display: block" method="post" action="/views/edit/{{ viewkey }}">
+                            <form class="single-form" name="circularfield" style="display: block" method="post" action="/editviews/edit/{{ viewkey }}">
                                 <input type="hidden" name="fieldnamelist" value="{{ single._try('fields')|join(',') }}">
                                 <input type="text" class="custom-field" name="fieldname" value="" style="width: 6em;" pattern=".{2,}" required >
                                 <input type="submit" name="new-cycle-field" value="Make">
                             </form>
 
                             <h2>Make Text Field</h2>
-                            <form class="single-form" name="customfield" style="display: block" method="post" action="/views/edit/{{ viewkey }}">
+                            <form class="single-form" name="customfield" style="display: block" method="post" action="/editviews/edit/{{ viewkey }}">
                                 <input type="hidden" name="fieldnamelist" value="{{ single._try('fields')|join(',') }}">
                                 <input type="text" class="custom-field" name="fieldname" value="" style="width: 6em;" pattern=".{2,}" required >
                                 <input type="submit" name="new-text-field" value="Make">
@@ -210,7 +213,7 @@
 
                             {% if props.magda(['beheer']) %}
                                 <h2>Link Email buttons</h2>
-                                <form name="addemailbutton" style="display: block" method="post" action="/views/emailbutton/{{ viewkey }}">
+                                <form name="addemailbutton" style="display: block" method="post" action="/editviews/emailbutton/{{ viewkey }}">
                                     {% for eb in emailbuttons %}
                                         <input type="submit" style="margin-bottom: 0.25em;" name="add-emb" value="{{ eb }}">
                                     {% endfor %}
@@ -219,7 +222,7 @@
                             {% endif %}
 
                             <h2>Link Groups</h2>
-                            <form name="addgroup" style="display: block" method="post" action="/views/group/{{ viewkey }}">
+                            <form name="addgroup" style="display: block" method="post" action="/editviews/group/{{ viewkey }}">
                                 <input type="hidden" name="add-group" value="1">
                                 {% for k, v in groepen.items() %}
                                     {% if not k in single._try('groups', []) and v['status'] == 1 %}
@@ -229,7 +232,7 @@
                             </form>
 
                             <h2>Handle with care</h2>
-                            <form style="display: block;" method="post" action="/views/delete/{{ viewkey }}">
+                            <form style="display: block;" method="post" action="/editviews/delete/{{ viewkey }}">
                                 <input type="submit" name="delete" value="Delete" style="background-color: red; color: white;">
                             </form>
                         {% endif %}
@@ -237,7 +240,7 @@
                 {% else %}
                     <div style="text-align: left;">
                         <h2>Make a copy of: {{ viewname }}</h2>
-                        <form class="single-form" name="kopie" method="post" action="/views/kopie/{{ viewkey }}">
+                        <form class="single-form" name="kopie" method="post" action="/editviews/kopie/{{ viewkey }}">
                             <input pattern=".{3,}" required type="text" name="newname" placeholder="Name of the copy">
                             <!-- <span style="background-color: #eee; border: 1px solid #ddd; border-radius: 3px; padding: 0.25em 0.5em; margin: 0 0.5em 0.25em 0;">
                                 <input type="radio" name="copy-contents" value="0" checked> skeleton only

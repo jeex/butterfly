@@ -18,11 +18,13 @@
             {% endif %}
 
             {% if props.magda(['docent', 'beheer', 'admin']) %}
-            <li class="{{ 'actief'|safe if menuitem == 'views' }}"><a href="/views">Views</a></li>
+            <li class="{{ 'actief'|safe if menuitem == 'views' }}"><a href="/views">views</a></li>
             {% endif %}
 
-            {% if False and props.magda(['docent', 'beheer', 'admin']) %}
-            <li class="{{ 'actief'|safe if menuitem == 'hunts' }}"><a href="/hunts">Hunts</a></li>
+            <li class="spacer">&nbsp;</li>
+
+            {% if props.magda(['docent', 'beheer', 'admin']) %}
+            <li class="{{ 'actief'|safe if menuitem == 'editviews' }}"><a href="/editviews">Edit Views</a></li>
             {% endif %}
 
             {% if props.magda(['admin']) %}

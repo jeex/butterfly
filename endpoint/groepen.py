@@ -168,6 +168,7 @@ def studenten_groep(groepnr=0, viewid=0):
 		circular=circular,
 	)
 
+'''
 @ep_groepen.post('/<int:groepnr>/<int:viewid>')
 @ep_groepen.post('/<int:groepnr>')
 def studenten_groep_post(groepnr, viewid=0):
@@ -242,6 +243,88 @@ def studenten_groep_post(groepnr, viewid=0):
 	# eventualy fix student dir issues
 	# fix_student_dir(id, student, student)
 	return redirect(camefrom)
+'''
+
+@ep_groepen.post('/noajax')
+def noajax_post():
+	camefrom = request.referrer.split('?')[0]
+	if 'sort-field' in request.form and 'sort-dir' in request.form:
+		sf = request.form['sort-field']
+		sd = request.form['sort-dir']
+	else:
+		sf = 'firstname'
+		sd = 'asc'
+	camefrom = f"{camefrom}?sort-field={sf}&sort-dir={sd}"
+
+	if not IOstuff.check_required_keys(request.form, ['what', 'field-name', 'field-value', 'student-id', 'view-id']):
+		return redirect(camefrom)
+
+	try:
+		studid = Casting.int_(request.form['student-id'], default=None)
+		fieldname = Casting.str_(request.form['field-name'], None)
+		viewid = Casting.int_(request.form['view-id'], None)
+		what = Casting.str_(request.form['what'], None)
+	except:
+		return redirect(camefrom)
+
+	if studid is None or fieldname is None or viewid is None or what is None:
+		return redirect(camefrom)
+
+	cc = 'circulars'  # avoid typoos
+	cu = 'customs'
+
+	students_o = Students()
+	students_o.init()
+	student = students_o.get_by_id(studid)
+
+	if student is None:
+		return redirect(camefrom)
+
+	if what == 'portfolio':
+		fieldval = Casting.str_(request.form['field-value'], '')
+		student['pf_url'] = fieldval
+
+	if what == 'grade':
+		fieldval = Casting.int_(request.form['field-value'], 0)
+		student['grade'] = fieldval
+		if fieldval > 0:
+			student['grade_ts'] = Timetools.now_secs()
+		else:
+			student['grade_ts'] = 0
+
+	elif what == cc:
+		# click on circular field
+		cirval = Casting.int_(request.form['field-value'], 0)
+		if cirval < 3:
+			cirval += 1
+		else:
+			cirval = 0
+
+		if not cc in student:
+			student[cc] = {viewid: {fieldname: cirval}}
+		if not viewid in student[cc]:
+			student[cc][viewid] = {fieldname: cirval}
+		if not fieldname in student[cc][viewid]:
+			student[cc][viewid][fieldname] = cirval
+		else:
+			student[cc][viewid][fieldname] = cirval
+
+	elif what == cu:
+		# edit in custom text field
+		cusval = Casting.str_(request.form['field-value'], '')
+		if not cu in student:
+			student[cu] = {viewid: {fieldname: cusval}}
+		if not viewid in student[cu]:
+			student[cu][viewid] = {fieldname: cusval}
+		if not fieldname in student[cu][viewid]:
+			student[cu][viewid][fieldname] = cusval
+		else:
+			student[cu][viewid][fieldname] = cusval
+
+	students_o.make_student_pickle(studid, student)
+	# eventualy fix student dir issues
+	# fix_student_dir(id, student, student)
+	return redirect(camefrom)
 
 @ep_groepen.post('/asshole')
 def asshole_post():
@@ -253,6 +336,7 @@ def asshole_post():
 		sf = 'firstname'
 		sd = 'asc'
 	camefrom = f"{camefrom}?sort-field={sf}&sort-dir={sd}"
+
 	try:
 		studid = Casting.int_(request.form['student-id'], default=None)
 		asshole = Casting.int_(request.form['asshole-field'], default=None)

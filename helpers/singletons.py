@@ -6,6 +6,7 @@ import platform
 import subprocess
 from collections import OrderedDict
 from pprint import pprint as ppp
+from flask import current_app
 
 from helpers.general import (
 	Casting,
@@ -408,6 +409,16 @@ class Views(metaclass=ViewsMeta):
 			if jus.alias() == val['alias']:
 				mijnviews.append(key)
 		return mijnviews
+
+	def active_views(self, no_default=True) -> list:
+		all = self._sysmem
+		active = list()
+		for key, val in all.items():
+			if no_default and key == self.get_defaultkey():
+				continue
+			if self.is_view_active(key):
+				active.append(val)
+		return active
 
 	def mijn_groepen(self, all=None) -> list:
 		# groepen waarbij ik een view heb
@@ -956,6 +967,8 @@ class UserSettings(metaclass=UserSetingsMeta):
 			self._rollen = self.get_prop('magda')
 		except:
 			pass
+		if Mainroad.devdev:
+			self._rollen = current_app.config['dev_magda']
 
 	def set_window_title(self, title: str):
 		self._title = title
